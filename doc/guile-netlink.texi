@@ -1,0 +1,408 @@
+\input texinfo
+@setfilename guile-netlink.info
+@documentencoding UTF-8
+@settitle guile-netlink
+
+@include version.texi
+
+@copying
+Copyright @copyright{} 2020 Julien Lepiller
+
+@quotation
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.3 or
+any later version published by the Free Software Foundation; with no
+Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.  A
+copy of the license is included in the section entitled ``GNU Free
+Documentation License''.
+@end quotation
+@end copying
+
+@titlepage
+@end titlepage
+
+@contents
+
+@node Top
+@top guile-netlink
+
+This document describes guile-netlink version @value{VERSION}, a guile
+implementation of the netlink protocol.
+
+@menu
+* Introduction::           What is netlink?
+* API Reference::          Description of the library interface.
+
+@detailmenu
+--- The Detailed Node Listing ---
+
+API Reference
+
+* Common API::             Common functions and data types for defining netlink
+                           protocols.
+* Netlink API::            Common structures and data types for every protocols.
+* Rtnetlink API::          The ROUTE_NETLINK protocol.
+
+@end detailmenu
+@end menu
+
+@node Introduction
+@chapter Introduction
+
+Netlink is an inter-process communication protocol that can be used for
+communication between processes, or with the kernel.  It is implemented by
+Linux.
+
+Many protocols exist on top of Netlink.  The most famous are used to configure
+network-related functions in the kernel, such as firewall, route table or
+IP addresses of interfaces.
+
+This library implements the low-level bits of the code by providing data
+structures that are close to their C counterpart, and basic procedures to
+initiate communication.
+
+@node API Reference
+@chapter API Reference
+
+@node Common API
+@section Common API
+
+Guile-netlink implements a common API for expressing other protocols.  This
+section describes how to use this API to augment guile-netlink with additional
+protocols.
+
+@node Data Types
+@subsection Data Types
+
+Guile-netlink defines data types that are used in the various Netlink protocols.
+We need to be able to serialize and deserialize data that guile-netlink
+understands, but we also want to let users of guile-netlink extend this process
+easily.  This need has lead to the creating of the following data structure,
+defined in @code{(netlink data}).
+
+@deffn {Datatype} nl-data
+
+@table @asis
+@item @code{data}
+The data that is held by this record.
+
+@item @code{size-proc}
+A procedure that takes a data (of the same type as the data recorded in the
+@code{data} field) and returns the size of its serialization.
+
+@item @code{serialization-proc}
+A procedure that takes a data (of the same type as the data recorded in the
+@code{data} field), the position at which to start serializing, and a
+bytevector in which to serialize.  This procedure should modify the bytevector
+and its return value is ignored.
+
+@end table
+@end deffn
+
+The module also defines the following function, that takes a @code{nl-data}
+structure and provides its serialization in a bytevector:
+
+@deffn {Scheme Procedure} serialize @var{data} @var{pos} @var{bv}
+Takes a @code{nl-data} structure as @var{data}, a position @var{pos} in
+the bytevector @var{bv}, and returns an unspecified value.
+
+This function updates the bytevector and adds the serialization of @var{data}
+into @var{bv} at @var{pos}.
+@end deffn
+
+By providing a @code{nl-data} structure, we defer the knowledge of how to
+serialize the data to the structure itself, instead of the @code{serialize}
+function.  This allows for more flexibility and extensibility, as the user
+of the procedure can pass any kind of data, even if it is not yet supported by
+guile-netlink.
+
+Similarly, we need to be able to deserialize netlink answers into a data
+structure.  To do so, we also defer the knowledge of the datastructure to
+deserialize to, to a decoder structure that is passed to the deserialization
+procedure.  @code{(netlink data)} also defines the following procedures to
+deserialize data:
+
+@deffn {Scheme Procedure} deserialize @var{type} @var{decoder} @var{bv} @var{pos}
+Takes a bytevector @var{bv} and starts deserializing the data starting at
+position @var{pos}.  To do so, it uses the @var{type} variable as the lookup
+key in the @var{decoder}.  @var{type} is a symbol that represents the type of
+data to deserialize to.
+
+The decoder is a structure that associates each known type to its deserializer
+(a function that takes a decoder, a bytevector and a position and returns some
+data) and an alist that associates a type (an integer, as returned by the
+protocol in use) to the proper decoder of that type.
+@end deffn
+
+@deffn {Scheme Procedure} get-current-deserialize @var{decoder} @var{current-type}
+Takes a decoder and a type, and returns the deserialization procedure associated
+with the type (a symbol) in @var{decoder}.
+@end deffn
+
+@deffn {Scheme Procedure} get-next-deserialize @var{decoder} @var{current-type} @
+    @var{target-type}
+Takes a decoder, a type (a symbol that represents the type of data being
+deserialized) and another type (an integer as returned by the protocol), and
+returns the deserialization procedure needed to continue decoding the data
+associated with the currently being deserialized data.
+
+For example, when decoding an answer in the netlink protocol, we first deserialize
+the header into a @code{message} structure.  That header contains a type field
+that contains an integer constant representing the type of data of the body.
+Similarly, when deserializing a routing attribute in the rtnetlink protocol,
+we first find a header of the attribute that defines an integer constant
+corresponding to the type of attribute in the body.
+
+By knowing the context in which the type is declared, this procedure can return
+the correct deserializing procedure.  For instance, when deserializing a
+@code{message}, type @code{16} means @code{RTM_NEWLINK} in the rtnetlink
+protocol, whereas it means @code{IFLA_OPERSTATE} when deserializing a
+@code{route-attribute}.
+@end deffn
+
+guile-netlink provides the following default decoder for the rtnetlink
+protocol in @code{(netlink deserialize)}:
+
+@deffn {Scheme Variable} %default-route-decoder
+Contains the default decoder for the NETLINK_ROUTE protocol.
+@end deffn
+
+For convenience, guile-netlink defines the following structures that can be used
+to create a custom decoder.
+
+@deffn {Scheme Variable} %default-message-decoder
+Contains the default association list for the common message types of netlink,
+associating each of them to a deserialization procedure.
+@end deffn
+
+@deffn {Scheme Variable} %default-route-attr-decoder
+Contains the default association list for the known types of routing attributes.
+This list is defined in @code{(netlink route attrs)}.
+@end deffn
+
+@node Constants
+@subsection Constants
+
+Guile-netlink defines constants used by the Netlink protocols in the
+@code{(netlink constant)} module.  The constants are the ones present in the
+kernel and are too numerous to list here.  Please see the source for the
+complete list.
+
+The module also defines the following macro:
+
+@deffn {Scheme Macro} define-enum @var{integer->symbol} @var{name-spec} ...
+This macros defines an enumeration.  @var{integer->symbol} is the name of
+a procedure that is publicly defined, that takes an integer and returns the
+associated symbol in the enumeration.
+
+The macro also publicly defines variables whose names are in @var{name-spec}
+to an integer.
+
+A @var{name-spec} is either a single name, and the associated value is 0 for
+the first @var{name-spec}, or one more than the previous @var{name-spec}.
+It can also be a pair of a name and an integer, in which case the associated
+value is that integer.  For instance:
+
+@example
+(define-enum get-foo FOO0 FOO1 (FOO10 10) FOO11 FOO12)
+(get-foo 9) -> #<unspecified>
+(get-foo 0) -> FOO0
+FOO11 -> 11
+@end example
+@end deffn
+
+@node Netlink Connections
+@subsection Netlink Connections
+
+The @code{(netlink connection)} module defines the following procedures, used
+to connect and communicate with another process or the kernel using a netlink
+socket.
+
+@deffn {Scheme Procedure} get-addr @var{family} @var{pid} @var{groups}
+Return a bytevector that represents a netlink address.  @var{family}
+should be @code{AF_NETLINK}, @var{pid} is the PID of the process with which
+to communicate or 0 for the kernel. @var{groups} is an integer representing
+the set of broadcast groups to which the connection subscribes.
+@end deffn
+
+@deffn {Scheme Procedure} connect @var{proto} @var{addr}
+Creates a netlink socket for @var{proto} and binds it to @var{addr}.
+
+@var{proto} is the integer representing the protocol.  For instance, rtnetlink
+can be selected by usin @code{NETLINK_ROUTE} (defined in
+@code{(netlink constant)}).
+
+@var{addr} is a bytevector, as returned by @code{get-addr}.
+@end deffn
+
+@deffn {Scheme Procedure} connect-route [#:groups @code{0}]
+This procedure is a wrapper for @code{connect} that creates a socket for the
+rtnetlink protocol, binds it to the kernel and returns it.  By passing the
+optional @var{groups} keyword, you can select broadcast groups to subscribe to.
+@end deffn
+
+@deffn {Scheme Procedure} close-socket @var{socket}
+Closes a netlink socket.  The socket cannot be used afterwards.
+@end deffn
+
+@deffn {Scheme Procedure} send-msg @var{msg} @var{sock} [#:@var{addr}]
+Send @var{msg} (it must be of type message, @xref{Netlink Headers}) to
+@var{addr} using @var{sock}.  If not passed, @var{addr} is the address of
+the kernel.
+@end deffn
+
+@deffn {Scheme Procedure} receive-msg @var{sock} [#:@var{addr}]
+Receives a message from @var{sock} from @var{addr}.  This procedure is blocking.
+If not passed, @var{addr} defaults to the address of the kernel.  This
+procedure returns the message as a bytevector, that you can deserialize with
+@code{deserialize} (@xref{Data Types})
+@end deffn
+
+@node Netlink API
+@section Netlink API
+
+This section introduces the data structures used for all the netlink protocols.
+First, we introduce the structure of a netlink message, then we present the
+standard types of netlink messages, that can be used with every protocol.
+
+@node Netlink Headers
+@subsection Netlink Headers
+
+The @code{(netlink message)} module defines the message structure that contains
+a netlink message.  It is composed of a header and a body, and is the data
+structure to pass to @code{send-msg} (@xref{Netlink Connections}).
+
+This module defines the following data structure:
+
+@deffn {Datatype} message
+@table @asis
+@item @code{type}
+The type of data in the body of the message.  For instance, @code{RTM_GETLINK}.
+
+@item @code{flags}
+The set of flags that are set in the header.  For instance,
+@code{(logior NLM_F_REQUEST NLM_F_DUMP)}.
+
+@item @code{seq}
+The sequence number of the message.  If this message is an answer to a request,
+it must keep the same sequence number.  Otherwise, you must generate a new and
+unique sequence number, to track the answers.
+
+@item @code{pid}
+The PID of the receiving process, or 0 for the kernel.
+
+@item @code{data}
+The actual body, as an @code{nl-data} structure.
+
+@end table
+@end deffn
+
+@node Standard Message Types
+@subsection Standard Message Types
+
+The @code{(netlink standard)} module defines the set of standard message types
+and their data type.
+
+@deffn {Datatype} error-message
+@table @asis
+@item @code{err}
+The error code, as a negative number.
+
+@item @code{hdr}
+The message on which this error applies.
+
+@end table
+
+@deffn {Scheme Variable} no-data
+This variable defines the absence of data.  This is useful when a structure
+is expecting a body part, but the protocol specifically defines that it should
+not take any data in some cases.  For instance, a @code{NLMSG_NOOP} message
+takes no data, so the @code{data} field of the message will contain this
+@code{no-data} value.
+@end deffn
+
+@end deffn
+
+@node Rtnetlink API
+@section Rtnetlink API
+@cindex rtnetlink
+@cindex ROUTE_NETLINK
+
+This section describes the support for rtnetlink in guile-netlink.  Rtnetlink
+is the protocol responsible for everything related to network routing.  It
+allows you to manage links, addresses, routing tables, neighbor chaces,
+routing rules, queueing disciplines, traffic classes, traffic filters and
+more.
+
+@node Routing Attributes
+@subsection Routing Attributes
+
+The @code{(netlink route attrs)} module defines the following data types:
+
+@deffn {Datatype} route-attr
+This defines a header structure for the attribute, as well as its body.
+
+@table @asis
+@item @code{type}
+This is the type of the attribute, for instance @code{IFLA_ADDRESS}.
+
+@item @code{data}
+This is the body of the attribute, ie.@: its value.
+@end table
+@end deffn
+
+The module also defines additional data types that are not represented as
+a record, but by a simple type.  For each of the following types, there is
+a @code{make-*-route-attr} procedure to produce a @code{nl-data} value
+for this type.  There is also @code{deserialize-route-attr-data-*} procedure
+to deserialize a value of this type.
+
+@table @asis
+@item @code{u8}
+A one-byte unsigned integer
+@item @code{u16}
+A two-bytes unsigned integer
+@item @code{u32}
+A four-bytes unsigned integer
+@item @code{s32}
+A four-bytes signed integer
+@item @code{string}
+A string
+@item @code{ethernet}
+An ethernet address.  Its value is a string that represents that address,
+for instnace @code{"01:23:45:67:89:ab"}
+@item @code{bv}
+A bytevector.  This is used by default when the type is not supported.
+@end table
+
+@node Link Messages
+@subsection Link Messages
+
+The @code{(netlink route link)} package defines the following data type:
+
+@deffn {Datatype} link-message
+This datatype represents a link message with its routing attributes.  This type
+of message is expected when using the @var{RTM_*LINK} message types.
+
+@table @asis
+@item @code{family}
+The network family, defined as @code{AF_UNSPEC} in the rtnetlink documentation,
+although it holds different values in practice.
+
+@item @code{type}
+The device type.
+
+@item @code{index}
+The index of the device.  This is used to select a specific device by its index,
+or 0 to not filter by device index.
+
+@item @code{flags}
+The device flags.  See @code{man 7 netdevices} for a list.
+
+@item @code{attrs}
+A list of attributes.  This field must contain a list of @code{nl-data}
+structures, not a structure by itself.
+@end table
+@end deffn
+
+@bye

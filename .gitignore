@@ -1,0 +1,17 @@
+*.go
+*.info
+*.html
+*.log
+.dirstamp
+Makefile
+Makefile.in
+configure
+aclocal.m4
+autom4te.cache/
+install-sh
+missing
+mdate-sh
+pre-inst-env
+texinfo.tex
+doc/version.texi
+doc/stamp-vti
