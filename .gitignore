@@ -6,6 +6,7 @@
 Makefile
 Makefile.in
 configure
+config.status
 aclocal.m4
 autom4te.cache/
 install-sh
