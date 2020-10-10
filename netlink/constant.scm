@@ -104,11 +104,13 @@
 (define-public NLM_F_DUMP_INTR #x10)
 (define-public NLM_F_DUMP_FILTERED #x20)
 
+;; modifiers to GET requests
 (define-public NLM_F_ROOT #x100)
 (define-public NLM_F_MATCH #x200)
 (define-public NLM_F_ATOMIC #x400)
 (define-public NLM_F_DUMP (logior NLM_F_ROOT NLM_F_MATCH))
 
+;; modifiers to NEW requests
 (define-public NLM_F_REPLACE #x100)
 (define-public NLM_F_EXCL #x200)
 (define-public NLM_F_CREATE #x400)
