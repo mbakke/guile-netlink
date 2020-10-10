@@ -379,6 +379,12 @@ A string
 @item @code{ethernet}
 An ethernet address.  Its value is a string that represents that address,
 for instnace @code{"01:23:45:67:89:ab"}
+@item @code{ipv4}
+An IPv4 address.  Its value is a string that represents that address,
+for instnace @code{"192.0.2.152"}
+@item @code{ipv6}
+An IPv6 address.  Its value is a string that represents that address,
+for instnace @code{"2001:db8::0123:4567:89ab:cdef"}
 @item @code{bv}
 A bytevector.  This is used by default when the type is not supported.
 @end table
@@ -406,6 +412,41 @@ or 0 to not filter by device index.
 
 @item @code{flags}
 The device flags.  See @code{man 7 netdevices} for a list.
+
+@item @code{attrs}
+A list of attributes.  This field must contain a list of @code{nl-data}
+structures, not a structure by itself.
+@end table
+@end deffn
+
+@node Address Messages
+@subsection Address Messages
+
+The @code{(netlink route addr)} package defines the following data type:
+
+@deffn {Datatype} addr-message
+This datatype represents an address message with its routing attributes.  This
+type of message is expected when using the @var{RTM_*ADDR} message types.
+
+@table @asis
+@item @code{family}
+The network family, either @code{AF_INET} for IPv4 addresses, or @code{AF_INET6}
+for IPv6 addresses.
+
+@item @code{prefix-len}
+The prefix length, i.e.@: the length of the prefix mask, in bits, if defined
+for the address family.
+
+@item @code{flags}
+Address flags.  This can be a flag word of @code{IFA_F_SECONDARY} for secondary
+address (old alias interface), @code{IFA_F_PERMANENT} for a permanent
+address set by the user and other undocumented flags.
+
+@item @code{scope}
+The address scope.
+
+@item @code{index}
+The index of the device this address is for.
 
 @item @code{attrs}
 A list of attributes.  This field must contain a list of @code{nl-data}

@@ -32,6 +32,8 @@
            make-s32-route-attr
            make-string-route-attr
            make-ethernet-route-attr
+           make-ipv4-route-attr
+           make-ipv6-route-attr
            make-bv-route-attr
            deserialize-route-attr
            deserialize-route-attr-data-string
@@ -39,9 +41,13 @@
            deserialize-route-attr-data-u32
            deserialize-route-attr-data-s32
            deserialize-route-attr-data-ethernet
+           deserialize-route-attr-data-ipv4
+           deserialize-route-attr-data-ipv6
            deserialize-route-attr-data-bv
            default-route-attr-decoder
-           %default-route-link-attr-decoder))
+           %default-route-link-attr-decoder
+           %default-route-ipv4-attr-decoder
+           %default-route-ipv6-attr-decoder))
 
 (define-data-type route-attr
   attr-type-size
@@ -104,6 +110,33 @@
       (let ((a (ethernet->bv data)))
         (bytevector-copy! a 0 bv pos (bytevector-length a))))))
 
+(define (ipv4->bv addr)
+  (u8-list->bytevector (map (lambda (n) (string->number n))
+                            (string-split addr #\.))))
+(define (make-ipv4-route-attr addr)
+  (make-nl-data
+    addr
+    (lambda (addr) (bytevector-length (ipv4->bv addr)))
+    (lambda (data pos bv)
+      (let ((a (ipv4->bv data)))
+        (bytevector-copy! a 0 bv pos (bytevector-length a))))))
+
+;16 bytes
+(define (ipv6->bv addr)
+  (let loop ((num (inet-pton AF_INET6 addr)) (lst '()))
+    (match lst
+      ((_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _)
+       (u8-list->bytevector (reverse lst)))
+      (_
+       (loop (quotient num 256) (cons (modulo num 256) lst))))))
+(define (make-ipv6-route-attr addr)
+  (make-nl-data
+    addr
+    (lambda (addr) (bytevector-length (ipv6->bv addr)))
+    (lambda (data pos bv)
+      (let ((a (ipv6->bv data)))
+        (bytevector-copy! a 0 bv pos (bytevector-length a))))))
+
 (define (make-bv-route-attr bv)
   (make-nl-data
     bv
@@ -123,7 +156,9 @@
         (deserialize decoder data-bv 0)))))
 
 (define (deserialize-route-attr-data-string decoder bv pos)
-  (make-string-route-attr (utf8->string bv)))
+  (make-string-route-attr
+    (or (false-if-exception (utf8->string bv))
+        (make-string (bytevector-length bv) #\a))))
 
 (define (deserialize-route-attr-data-u32 decoder bv pos)
   (make-u32-route-attr (bytevector-u32-ref bv pos (native-endianness))))
@@ -143,8 +178,21 @@
                       (bytevector->u8-list bv))
                  ":")))
 
-(define %default-route-link-attr-decoder
-  (default-route-attr-decoder deserialize-route-attr-data-ethernet))
+(define (deserialize-route-attr-data-ipv4 decoder bv pos)
+  (make-ipv4-route-attr
+    (string-join (map (lambda (n) (number->string n))
+                      (bytevector->u8-list bv))
+                 ".")))
+
+(define (deserialize-route-attr-data-ipv6 decoder bv pos)
+  (define (ipv6->number addr)
+    (let loop ((addr (bytevector->u8-list addr)) (num 0))
+      (match addr
+        (() num)
+        ((byte addr ...)
+         (loop addr (+ (* 256 num) byte))))))
+  (make-ipv6-route-attr
+    (inet-ntop AF_INET6 (ipv6->number bv))))
 
 (define (default-route-attr-decoder deserialize-addr)
   `((,IFLA_IFNAME . ,deserialize-route-attr-data-string)
@@ -179,3 +227,12 @@
     (,IFLA_BROADCAST . ,deserialize-addr)
     (,IFLA_PERM_ADDRESS . ,deserialize-addr)
     (default . ,deserialize-route-attr-data-bv)))
+
+(define %default-route-link-attr-decoder
+  (default-route-attr-decoder deserialize-route-attr-data-ethernet))
+
+(define %default-route-ipv4-attr-decoder
+  (default-route-attr-decoder deserialize-route-attr-data-ipv4))
+
+(define %default-route-ipv6-attr-decoder
+  (default-route-attr-decoder deserialize-route-attr-data-ipv6))
