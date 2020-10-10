@@ -40,7 +40,8 @@
            deserialize-route-attr-data-s32
            deserialize-route-attr-data-ethernet
            deserialize-route-attr-data-bv
-           %default-route-attr-decoder))
+           default-route-attr-decoder
+           %default-route-link-attr-decoder))
 
 (define-data-type route-attr
   attr-type-size
@@ -110,15 +111,16 @@
     (lambda (data pos bv)
       (bytevector-copy! data 0 bv pos (bytevector-length data)))))
 
-(define (deserialize-route-attr decoder bv pos)
-  (let* ((len (bytevector-u16-ref bv pos (native-endianness)))
-         (type (bytevector-u16-ref bv (+ pos 2) (native-endianness)))
-         (deserialize (get-next-deserialize decoder 'attr type))
-         (data-bv (make-bytevector (- len 4))))
-    (bytevector-copy! bv (+ pos 4) data-bv 0 (- len 4))
-    (make-route-attr
-      type
-      (deserialize decoder data-bv 0))))
+(define (deserialize-route-attr message-type)
+  (lambda (decoder bv pos)
+    (let* ((len (bytevector-u16-ref bv pos (native-endianness)))
+           (type (bytevector-u16-ref bv (+ pos 2) (native-endianness)))
+           (deserialize (get-next-deserialize decoder message-type type))
+           (data-bv (make-bytevector (- len 4))))
+      (bytevector-copy! bv (+ pos 4) data-bv 0 (- len 4))
+      (make-route-attr
+        type
+        (deserialize decoder data-bv 0)))))
 
 (define (deserialize-route-attr-data-string decoder bv pos)
   (make-string-route-attr (utf8->string bv)))
@@ -141,7 +143,10 @@
                       (bytevector->u8-list bv))
                  ":")))
 
-(define %default-route-attr-decoder
+(define %default-route-link-attr-decoder
+  (default-route-attr-decoder deserialize-route-attr-data-ethernet))
+
+(define (default-route-attr-decoder deserialize-addr)
   `((,IFLA_IFNAME . ,deserialize-route-attr-data-string)
     (,IFLA_QDISC . ,deserialize-route-attr-data-string)
     (,IFLA_IFALIAS . ,deserialize-route-attr-data-string)
@@ -170,7 +175,7 @@
     (,IFLA_LINKMODE . ,deserialize-route-attr-data-u8)
     (,IFLA_CARRIER . ,deserialize-route-attr-data-u8)
     (,IFLA_PROTO_DOWN . ,deserialize-route-attr-data-u8)
-    (,IFLA_ADDRESS . ,deserialize-route-attr-data-ethernet)
-    (,IFLA_BROADCAST . ,deserialize-route-attr-data-ethernet)
-    (,IFLA_PERM_ADDRESS . ,deserialize-route-attr-data-ethernet)
+    (,IFLA_ADDRESS . ,deserialize-addr)
+    (,IFLA_BROADCAST . ,deserialize-addr)
+    (,IFLA_PERM_ADDRESS . ,deserialize-addr)
     (default . ,deserialize-route-attr-data-bv)))

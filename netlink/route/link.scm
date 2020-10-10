@@ -65,6 +65,6 @@
       (let loop ((pos (+ pos 16)) (attrs '()))
         (if (>= pos len)
             attrs
-            (let ((attr (deserialize 'attr decoder bv pos)))
+            (let ((attr (deserialize 'link-attr decoder bv pos)))
               (loop (+ pos (align (data-size attr) 4))
                     (cons attr attrs))))))))

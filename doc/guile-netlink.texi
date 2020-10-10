@@ -175,9 +175,17 @@ Contains the default association list for the common message types of netlink,
 associating each of them to a deserialization procedure.
 @end deffn
 
-@deffn {Scheme Variable} %default-route-attr-decoder
-Contains the default association list for the known types of routing attributes.
-This list is defined in @code{(netlink route attrs)}.
+@deffn {Scheme Procedure} default-route-attr-decoder @var{deserialize-addr}
+Creates the default association list for a route protocol, given the specified
+address deserializer.  This is useful because the @code{IFA_ADDRESS},
+@code{IFA_BROADCAST}, etc, contain a different type of address depending on
+the message type or its header.  This is defined an @code{(netlink route attrs)}
+and used by the following variables:
+@end deffn
+
+@deffn {Scheme Variable} %default-route-link-attr-decoder
+Contains the default association list for the known types of routing attributes
+for link messages.  This list is defined in @code{(netlink route attrs)}.
 @end deffn
 
 @node Constants

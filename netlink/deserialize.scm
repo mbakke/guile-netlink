@@ -37,5 +37,5 @@
       (,RTM_DELLINK . ,route:deserialize-link-message)
       (,RTM_GETLINK . ,route:deserialize-link-message)
       (,RTM_SETLINK . ,route:deserialize-link-message))
-    (attr ,route:deserialize-route-attr
-          ,@route:%default-route-attr-decoder)))
+    (link-attr ,(route:deserialize-route-attr 'link-attr)
+               ,@route:%default-route-link-attr-decoder)))
