@@ -27,6 +27,7 @@
             close-socket
             send-msg
             receive-msg
+            receive-and-decode-msg
             get-addr))
 
 (define libc (dynamic-link))
@@ -117,3 +118,21 @@
     (when (> size 0)
       (bytevector-copy! bv 0 answer 0 size))
     answer))
+
+(define* (receive-and-decode-msg sock decoder
+                                 #:key (addr (get-addr AF_NETLINK 0 0)))
+  (let* ((answer (receive-msg sock #:addr addr))
+         (size (bytevector-length answer)))
+    (let loop ((messages '()) (pos 0))
+      (if (>= pos size)
+          (let ((last-message (car messages)))
+            (if (and
+                  (equal? (logand (message-flags last-message) NLM_F_MULTI)
+                          NLM_F_MULTI)
+                  (> (message-kind last-message) NLMSG_OVERUN))
+                (append (reverse messages)
+                        (receive-and-decode-msg sock decoder #:addr addr))
+                (reverse messages)))
+          (let ((message (deserialize 'message decoder answer pos)))
+            (loop (cons message messages)
+                  (+ (data-size message) pos)))))))

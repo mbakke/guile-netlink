@@ -266,6 +266,17 @@ procedure returns the message as a bytevector, that you can deserialize with
 @code{deserialize} (@xref{Data Types})
 @end deffn
 
+@deffn {Scheme Procedure} receive-and-decode-msg @var{sock} @var{decoder} @
+    [#:@var{addr}]
+Receives one or more messages from @var{sock} from @var{addr}.  this procedure
+is blocking.  If not passed, @var{addr} defaults to the address of the kernel.
+This procedure returns a list of messages that were decoded using @var{decoder}.
+
+When the answer has the @code{NLM_F_MULTI} flag, this procedure decodes the next
+message, until it receives a @code{NLMSG_DONE} message.  It returns the list
+of every netlink messages it received, including the @code{NLMSG_DONE}.
+@end deffn
+
 @node Netlink API
 @section Netlink API
 
