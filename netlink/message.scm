@@ -52,10 +52,15 @@
 (define (deserialize-message decoder bv pos)
   (let* ((len (bytevector-u32-ref bv pos (native-endianness)))
          (type (bytevector-u16-ref bv (+ pos 4) (native-endianness)))
+         (data (make-bytevector len))
          (deserialize (get-next-deserialize decoder 'message type)))
-    (make-message
-      type
-      (bytevector-u16-ref bv (+ pos 6) (native-endianness))
-      (bytevector-u32-ref bv (+ pos 8) (native-endianness))
-      (bytevector-u32-ref bv (+ pos 12) (native-endianness))
-      (deserialize decoder bv (+ pos 16)))))
+    (bytevector-copy! bv pos data 0 len)
+    (let ((data (deserialize decoder data 16)))
+      (make-message
+        type
+        (bytevector-u16-ref bv (+ pos 6) (native-endianness))
+        (bytevector-u32-ref bv (+ pos 8) (native-endianness))
+        (bytevector-u32-ref bv (+ pos 12) (native-endianness))
+        (if (< (data-size data) (- len 16))
+            (make-nl-data #f (const (- len 16)) (const (make-bytevector 0)))
+            data)))))
