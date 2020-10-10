@@ -18,6 +18,7 @@
 (define-module (netlink message)
   #:use-module (ice-9 match)
   #:use-module (netlink data)
+  #:use-module (netlink standard)
   #:use-module (rnrs bytevectors)
   #:use-module (srfi srfi-9)
   #:export (make-message
@@ -27,7 +28,8 @@
             message-seq
             message-pid
             message-data
-            deserialize-message))
+            deserialize-message
+            deserialize-message-header))
 
 (define-data-type message
   message-type-len
@@ -64,3 +66,11 @@
         (if (< (data-size data) (- len 16))
             (make-nl-data #f (const (- len 16)) (const (make-bytevector 0)))
             data)))))
+
+(define (deserialize-message-header decoder bv pos)
+  (make-message
+    (bytevector-u16-ref bv (+ pos 4) (native-endianness))
+    (bytevector-u16-ref bv (+ pos 6) (native-endianness))
+    (bytevector-u32-ref bv (+ pos 8) (native-endianness))
+    (bytevector-u32-ref bv (+ pos 12) (native-endianness))
+    no-data))

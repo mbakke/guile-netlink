@@ -41,6 +41,7 @@
       (,RTM_NEWADDR . ,route:deserialize-addr-message)
       (,RTM_DELADDR . ,route:deserialize-addr-message)
       (,RTM_GETADDR . ,route:deserialize-addr-message))
+    (message-hdr ,deserialize-message-header '())
     (link-attr ,(route:deserialize-route-attr 'link-attr)
                ,@route:%default-route-link-attr-decoder)
     (ipv4-attr ,(route:deserialize-route-attr 'ipv4-attr)
