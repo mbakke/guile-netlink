@@ -54,7 +54,7 @@
              (cond
                #,@(map (lambda (s) (getter #'num s)) (spec-names #'(name-spec ...))))))))))
 
-(define-enum int->attr-kind
+(define-enum int->link-attr-kind
              IFLA_UNSPEC IFLA_ADDRESS IFLA_BROADCAST IFLA_IFNAME IFLA_MTU
              IFLA_LINK IFLA_QDISC IFLA_STATS IFLA_COST IFLA_PRIORITY
              IFLA_MASTER IFLA_WIRELESS IFLA_PROTIFO IFLA_TXQLEN IFLA_MAP
@@ -70,6 +70,11 @@
              IFLA_CARRIER_DOWN_COUNT IFLA_NEW_IFINDEX IFLA_MIN_MTU IFLA_MAX_MTU
              IFLA_PROP_LIST IFLA_ALT_IFNAME IFLA_PERM_ADDRESS)
 (define-public IFLA_TARGET_NETNSID IFLA_IF_NETNSID)
+
+(define-enum int->addr-attr-kind
+             IFA_UNSPEC IFA_ADDRESS IFA_LOCAL IFA_LABEL IFA_BROADCAST
+             IFA_ANYCAST IFA_CACHEINFO IFA_MULTICAST IFA_FLAGS
+             IFA_RT_PRIORITY IFA_TARGET_NETNSID)
 
 (define-public AF_NETLINK 16)
 (define-public AF_PACKET 17)
