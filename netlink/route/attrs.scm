@@ -44,10 +44,9 @@
            deserialize-route-attr-data-ipv4
            deserialize-route-attr-data-ipv6
            deserialize-route-attr-data-bv
-           default-route-attr-decoder
            %default-route-link-attr-decoder
-           %default-route-ipv4-attr-decoder
-           %default-route-ipv6-attr-decoder))
+           %default-route-addr-ipv4-attr-decoder
+           %default-route-addr-ipv6-attr-decoder))
 
 (define-data-type route-attr
   attr-type-size
@@ -194,45 +193,29 @@
   (make-ipv6-route-attr
     (inet-ntop AF_INET6 (ipv6->number bv))))
 
-(define (default-route-attr-decoder deserialize-addr)
-  `((,IFLA_IFNAME . ,deserialize-route-attr-data-string)
-    (,IFLA_QDISC . ,deserialize-route-attr-data-string)
-    (,IFLA_IFALIAS . ,deserialize-route-attr-data-string)
-    (,IFLA_PHYS_PORT_NAME . ,deserialize-route-attr-data-string)
+(define %default-route-link-attr-decoder
+  `((,IFLA_ADDRESS . ,deserialize-route-attr-data-ethernet)
+    (,IFLA_BROADCAST . ,deserialize-route-attr-data-ethernet)
+    (,IFLA_IFNAME . ,deserialize-route-attr-data-string)
     (,IFLA_MTU . ,deserialize-route-attr-data-u32)
-    (,IFLA_TXQLEN . ,deserialize-route-attr-data-u32)
     (,IFLA_LINK . ,deserialize-route-attr-data-u32)
-    (,IFLA_WEIGHT . ,deserialize-route-attr-data-u32)
-    (,IFLA_MASTER . ,deserialize-route-attr-data-u32)
-    (,IFLA_NUM_VF . ,deserialize-route-attr-data-u32)
-    (,IFLA_PROMISCUITY . ,deserialize-route-attr-data-u32)
-    (,IFLA_NUM_TX_QUEUES . ,deserialize-route-attr-data-u32)
-    (,IFLA_NUM_RX_QUEUES . ,deserialize-route-attr-data-u32)
-    (,IFLA_GSO_MAX_SEGS . ,deserialize-route-attr-data-u32)
-    (,IFLA_GSO_MAX_SIZE . ,deserialize-route-attr-data-u32)
-    (,IFLA_GROUP . ,deserialize-route-attr-data-u32)
-    (,IFLA_CARRIER_CHANGES . ,deserialize-route-attr-data-u32)
-    (,IFLA_NET_NS_PID . ,deserialize-route-attr-data-u32)
-    (,IFLA_NET_NS_FD . ,deserialize-route-attr-data-u32)
-    (,IFLA_NEW_IFINDEX . ,deserialize-route-attr-data-u32)
-    (,IFLA_MIN_MTU . ,deserialize-route-attr-data-u32)
-    (,IFLA_MAX_MTU . ,deserialize-route-attr-data-u32)
-    (,IFLA_CARRIER_UP_COUNT . ,deserialize-route-attr-data-u32)
-    (,IFLA_CARRIER_DOWN_COUNT . ,deserialize-route-attr-data-u32)
-    (,IFLA_OPERSTATE . ,deserialize-route-attr-data-u8)
-    (,IFLA_LINKMODE . ,deserialize-route-attr-data-u8)
-    (,IFLA_CARRIER . ,deserialize-route-attr-data-u8)
-    (,IFLA_PROTO_DOWN . ,deserialize-route-attr-data-u8)
-    (,IFLA_ADDRESS . ,deserialize-addr)
-    (,IFLA_BROADCAST . ,deserialize-addr)
-    (,IFLA_PERM_ADDRESS . ,deserialize-addr)
+    (,IFLA_QDISC . ,deserialize-route-attr-data-string)
+    ;; TODO: struct rtnl_link_stats
+    ;(,IFLA_STATS . ,deserialize-route-attr-data-stats)
     (default . ,deserialize-route-attr-data-bv)))
 
-(define %default-route-link-attr-decoder
-  (default-route-attr-decoder deserialize-route-attr-data-ethernet))
+(define (default-route-addr-attr-decoder address-decoder)
+  `((,IFA_ADDRESS . ,address-decoder)
+    (,IFA_LOCAL . ,address-decoder)
+    (,IFA_LABEL . ,deserialize-route-attr-data-string)
+    (,IFA_BROADCAST . ,address-decoder)
+    (,IFA_ANYCAST . ,address-decoder)
+    ;; TODO: struct ifa_cacheinfo
+    ;(,IFA_CACHEINFO . ,deserialize-route-attr-data-cache-info)
+    (default . ,deserialize-route-attr-data-bv)))
 
-(define %default-route-ipv4-attr-decoder
-  (default-route-attr-decoder deserialize-route-attr-data-ipv4))
+(define %default-route-addr-ipv4-attr-decoder
+  (default-route-addr-attr-decoder deserialize-route-attr-data-ipv4))
 
-(define %default-route-ipv6-attr-decoder
-  (default-route-attr-decoder deserialize-route-attr-data-ipv6))
+(define %default-route-addr-ipv6-attr-decoder
+  (default-route-addr-attr-decoder deserialize-route-attr-data-ipv6))

@@ -45,6 +45,6 @@
     (link-attr ,(route:deserialize-route-attr 'link-attr)
                ,@route:%default-route-link-attr-decoder)
     (ipv4-attr ,(route:deserialize-route-attr 'ipv4-attr)
-               ,@route:%default-route-ipv4-attr-decoder)
+               ,@route:%default-route-addr-ipv4-attr-decoder)
     (ipv6-attr ,(route:deserialize-route-attr 'ipv6-attr)
-               ,@route:%default-route-ipv6-attr-decoder)))
+               ,@route:%default-route-addr-ipv6-attr-decoder)))
