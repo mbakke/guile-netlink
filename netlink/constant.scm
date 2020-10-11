@@ -76,6 +76,14 @@
              IFA_ANYCAST IFA_CACHEINFO IFA_MULTICAST IFA_FLAGS
              IFA_RT_PRIORITY IFA_TARGET_NETNSID)
 
+(define-enum int->route-attr-kind
+             RTA_UNSPEC RTA_DST RTA_SRC RTA_IIF RTA_OIF RTA_GATEWAY
+             RTA_PRIORITY RTA_PREFSRC RTA_METRICS RTA_MULTIPATH
+             RTA_PROTOINFO RTA_FLOW RTA_CACHEINFO RTA_SESSION RTA_MP_ALGO
+             RTA_TABLE RTA_MARK RTA_MFC_STATS RTA_VIA RTA_NEWDST RTA_PREF
+             RTA_ENCAP_TYPE RTA_ENCAP RTA_EXPIRES RTA_PAD RTA_UID
+             RTA_TTL_PROPAGATE RTA_IP_PROTO RTA_SPORT RTA_DPORT RTA_NH_ID)
+
 (define-public AF_NETLINK 16)
 (define-public AF_PACKET 17)
 
@@ -208,3 +216,49 @@
              IF_OPER_UNKNOWN IF_OPER_NOTPRESENT IF_OPER_DOWN
              IF_OPER_LOWERLAYERDOWN IF_OPER_TESTING IF_OPER_DORMANT
              IF_OPER_UP)
+
+;; rtm_type
+(define-enum int->rtm-type
+             RTN_UNSPEC RTN_UNICAST RTN_LOCAL RTN_BROADCAST RTN_ANYCAST
+             RTN_MULTICAST RTN_BLACKHOLE RTN_UNREACHABLE RTN_PROHIBIT
+             RTN_THROW RTN_NAT RTN_XRESOLVE)
+
+;; rtm_protocol
+(define-enum int->rtm-protocol
+             RTPROT_UNSPEC RTPROT_REDIRECT RTPROT_KERNEL RTPROT_BOOT RTPROT_STATIC
+             ;; not interpreted by the kernel, but returned anyway.
+             (RTPROT_GATED 8)
+             RTPROT_RA RTPROT_MRT RTPROT_ZEBRA RTPROT_BIRD RTPROT_DNROUTED
+             RTPROT_XORP RTPROT_NTK RTPROT_DHCP RTPROT_MROUTED
+             (RTPROT_BABEL 42)
+             (RTPROT_BGP 186)
+             RTPROT_ISIS RTPROT_OSPF RTPROT_RIP
+             (RTPROT_EIGRP 192))
+
+;; rtm_scope
+(define-enum int->rtm-scope
+             RT_SCOPE_UNIVERSE
+             (RT_SCOPE_SITE 200)
+             (RT_SCOPE_LINK 253)
+             (RT_SCOPE_HOST 254)
+             (RT_SCOPE_NOWHERE 255))
+
+;; rtm_flags
+(define-enum int->rtm-flag
+             (RTM_F_NOTIFY #x100)
+             (RTM_F_CLONED #x200)
+             (RTM_F_EQUALIZE #x400)
+             (RTM_F_PREFIX #x800)
+             (RTM_F_LOOKUP_TABLE #x1000)
+             (RTM_F_FIB_MATCH #x2000)
+             (RTM_F_OFFLOAD #x4000)
+             (RTM_F_TRAP #x8000))
+
+
+;; rtm_table
+(define-enum int->rtm-table
+             RT_TABLE_UNSPEC
+             (RT_TABLE_COMPAT 252)
+             (RT_TABLE_DEFAULT 253)
+             (RT_TABLE_MAIN 254)
+             (RT_TABLE_LOCAL 255))
