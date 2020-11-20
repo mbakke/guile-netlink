@@ -15,64 +15,81 @@
 ;;;; Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;;;; 
 
-(define-module (netlink route addr)
+(define-module (netlink route route)
   #:use-module (ice-9 match)
   #:use-module (netlink data)
   #:use-module (netlink route attrs)
   #:use-module (srfi srfi-9)
   #:use-module (rnrs bytevectors)
-  #:export (make-addr-message
-            addr-message?
-            addr-message-family
-            addr-message-prefix-len
-            addr-message-flags
-            addr-message-scope
-            addr-message-index
-            addr-message-attrs
-            deserialize-addr-message))
+  #:export (make-route-message
+            route-message?
+            route-message-family
+            route-message-dest-len
+            route-message-src-len
+            route-message-tos
+            route-message-table
+            route-message-protocol
+            route-message-scope
+            route-message-type
+            route-message-flags
+            route-message-attrs
+            deserialize-route-message))
 
 (define (align pos to)
   (+ pos -1 (- to (modulo (- pos 1) to))))
 
-(define-data-type addr-message
+(define-data-type route-message
   (lambda (msg)
-    (+ 8 (apply + (map (lambda (d) (align (data-size d) 4)) attrs))))
+    (+ 12 (apply + (map (lambda (d) (align (data-size d) 4)) attrs))))
   (lambda (msg pos bv)
     (match msg
-      (($ addr-message-type family prefix-len flags scope index attrs)
+      (($ route-message-type family dest-len src-len tos table protocol
+          scope type flags attrs)
        (bytevector-u8-set! bv pos family)
-       (bytevector-u8-set! bv (+ pos 1) prefix-len)
-       (bytevector-u8-set! bv (+ pos 2) flags)
-       (bytevector-u8-set! bv (+ pos 3) scope)
-       (bytevector-u32-set! bv (+ pos 4) index (native-endianness))
-       (let loop ((attrs attrs) (pos (+ pos 8)))
+       (bytevector-u8-set! bv (+ pos 1) dest-len)
+       (bytevector-u8-set! bv (+ pos 2) src-len)
+       (bytevector-u8-set! bv (+ pos 3) tos)
+       (bytevector-u8-set! bv (+ pos 4) table)
+       (bytevector-u8-set! bv (+ pos 5) protocol)
+       (bytevector-u8-set! bv (+ pos 6) scope)
+       (bytevector-u8-set! bv (+ pos 7) type)
+       (bytevector-u32-set! bv (+ pos 8) flags (native-endianness))
+       (let loop ((attrs attrs) (pos (+ pos 12)))
          (match attrs
            ((attr attrs ...)
             (serialize attr pos bv)
             (loop attrs (+ pos (align (data-size attr) 4))))
            (() #t))))))
   (family addr-message-family addr-message-type-family)
-  (prefix-len addr-message-prefix-len addr-message-type-prefix-len)
-  (flags addr-message-flags addr-message-type-flags)
+  (dest-len addr-message-dest-len addr-message-type-dest-len)
+  (src-len addr-message-src-len addr-message-type-src-len)
+  (tos addr-message-tos addr-message-type-tos)
+  (table addr-message-table addr-message-type-table)
+  (protocol addr-message-protocol addr-message-type-protocol)
   (scope addr-message-scope addr-message-type-scope)
-  (index addr-message-index addr-message-type-index)
+  (type addr-message-kind addr-message-type-type)
+  (flags addr-message-flags addr-message-type-flags)
   (attrs addr-message-attrs addr-message-type-attrs))
 
-(define (deserialize-addr-message decoder bv pos)
+(define (deserialize-route-message decoder bv pos)
   (let ((family (bytevector-u8-ref bv pos)))
-    (make-addr-message
+    (make-route-message
       family
       (bytevector-u8-ref bv (+ pos 1))
       (bytevector-u8-ref bv (+ pos 2))
       (bytevector-u8-ref bv (+ pos 3))
-      (bytevector-u32-ref bv (+ pos 4) (native-endianness))
+      (bytevector-u8-ref bv (+ pos 4))
+      (bytevector-u8-ref bv (+ pos 5))
+      (bytevector-u8-ref bv (+ pos 6))
+      (bytevector-u8-ref bv (+ pos 7))
+      (bytevector-u32-ref bv (+ pos 8) (native-endianness))
       (let ((len (bytevector-length bv)))
-        (let loop ((pos (+ pos 8)) (attrs '()))
+        (let loop ((pos (+ pos 12)) (attrs '()))
           (if (>= pos len)
               attrs
               (let ((attr (deserialize (cond
-                                         ((equal? family AF_INET) 'ipv4-addr-attr)
-                                         ((equal? family AF_INET6) 'ipv6-addr-attr)
+                                         ((equal? family AF_INET) 'ipv4-route-attr)
+                                         ((equal? family AF_INET6) 'ipv6-route-attr)
                                          (else (throw 'unknown-family family)))
                                        decoder bv pos)))
                 (loop (+ pos (align (data-size attr) 4))

@@ -38,15 +38,18 @@
            deserialize-route-attr
            deserialize-route-attr-data-string
            deserialize-route-attr-data-u8
+           deserialize-route-attr-data-u16
            deserialize-route-attr-data-u32
            deserialize-route-attr-data-s32
            deserialize-route-attr-data-ethernet
            deserialize-route-attr-data-ipv4
            deserialize-route-attr-data-ipv6
            deserialize-route-attr-data-bv
-           %default-route-link-attr-decoder
            %default-route-addr-ipv4-attr-decoder
-           %default-route-addr-ipv6-attr-decoder))
+           %default-route-addr-ipv6-attr-decoder
+           %default-route-link-attr-decoder
+           %default-route-route-ipv4-attr-decoder
+           %default-route-route-ipv6-attr-decoder))
 
 (define-data-type route-attr
   attr-type-size
@@ -165,6 +168,9 @@
 (define (deserialize-route-attr-data-s32 decoder bv pos)
   (make-s32-route-attr (bytevector-s32-ref bv pos (native-endianness))))
 
+(define (deserialize-route-attr-data-u16 decoder bv pos)
+  (make-u32-route-attr (bytevector-u16-ref bv pos (native-endianness))))
+
 (define (deserialize-route-attr-data-u8 decoder bv pos)
   (make-u8-route-attr (bytevector-u8-ref bv pos)))
 
@@ -214,8 +220,42 @@
     ;(,IFA_CACHEINFO . ,deserialize-route-attr-data-cache-info)
     (default . ,deserialize-route-attr-data-bv)))
 
+(define (default-route-route-attr-decoder address-decoder)
+  `((,RTA_DST . ,address-decoder)
+    (,RTA_SRC . ,address-decoder)
+    (,RTA_IIF . ,deserialize-route-attr-data-u32)
+    (,RTA_OIF . ,deserialize-route-attr-data-u32)
+    (,RTA_GATEWAY . ,address-decoder)
+    (,RTA_PRIORITY . ,deserialize-route-attr-data-u32)
+    (,RTA_PREFSRC . ,address-decoder)
+    (,RTA_METRICS . ,deserialize-route-attr-data-u32)
+    ;; TODO: struct rtnexthop
+    ;(,RTA_MULTIPATH . ,deserialize-route-attr-data-rt-next-hop)
+    (,RTA_FLOW . ,deserialize-route-attr-data-u32)
+    ; TODO: struct rta_cacheinfo
+    ;(,RTA_CACHEINFO . ,deserialize-route-attr-data-rta-cache-info)
+    (,RTA_TABLE . ,deserialize-route-attr-data-u32)
+    (,RTA_MARK . ,deserialize-route-attr-data-u32)
+    ;; TODO: struct rta_mfc_stats
+    ;(,RTA_MFC_STATS . ,deserialize-route-attr-data-rta-mfc-stats)
+    ;; TODO: struct rtvia
+    ;(,RTA_VIA . ,,deserialize-route-attr-data-rtvia)
+    (,RTA_NEWDST . ,address-decoder)
+    (,RTA_PREF . ,deserialize-route-attr-data-u8)
+    (,RTA_ENCAP_TYPE . ,deserialize-route-attr-data-u16)
+    ;; TODO: defined by RTA_ENCAP_TYPE
+    ;(,RTA_ENCAP . ??)
+    (,RTA_EXPIRES . ,deserialize-route-attr-data-u32)
+    (default . ,deserialize-route-attr-data-bv)))
+
 (define %default-route-addr-ipv4-attr-decoder
   (default-route-addr-attr-decoder deserialize-route-attr-data-ipv4))
 
 (define %default-route-addr-ipv6-attr-decoder
   (default-route-addr-attr-decoder deserialize-route-attr-data-ipv6))
+
+(define %default-route-route-ipv4-attr-decoder
+  (default-route-route-attr-decoder deserialize-route-attr-data-ipv4))
+
+(define %default-route-route-ipv6-attr-decoder
+  (default-route-route-attr-decoder deserialize-route-attr-data-ipv6))

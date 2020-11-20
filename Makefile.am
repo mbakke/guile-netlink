@@ -9,6 +9,7 @@ SOURCES= \
   netlink/deserialize.scm \
   netlink/route/addr.scm \
   netlink/route/attrs.scm \
-  netlink/route/link.scm
+  netlink/route/link.scm \
+  netlink/route/route.scm
 
 info_TEXINFOS= doc/guile-netlink.texi
