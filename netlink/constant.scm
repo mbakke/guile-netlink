@@ -211,6 +211,28 @@
 (define-public NLM_F_CAPPED #x100)
 (define-public NLM_F_ACK_TLVS #x200)
 
+;; net_device_flags
+(define-enum int->device-flags
+  (IFF_UP 1)
+  (IFF_BROADCAST 2)
+  (IFF_DEBUG 4)
+  (IFF_LOOPBACK 8)
+  (IFF_POINTOPOINT 16)
+  (IFF_NOTRAILERS 32)
+  (IFF_RUNNING 64)
+  (IFF_NOARP 128)
+  (IFF_PROMISC 256)
+  (IFF_ALLMULTI 512)
+  (IFF_MASTER 1024)
+  (IFF_SLAVE 2048)
+  (IFF_MULTICAST 4096)
+  (IFF_PORTSEL 8192)
+  (IFF_AUTOMEDIA 16384)
+  (IFF_DYNAMIC 32768)
+  (IFF_LOWER_UP 65536)
+  (IFF_DORMANT 131072)
+  (IFF_ECHO 262144))
+
 ;; operstate
 (define-enum int->operstate
              IF_OPER_UNKNOWN IF_OPER_NOTPRESENT IF_OPER_DOWN
