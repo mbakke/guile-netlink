@@ -38,7 +38,7 @@
 
 (define-data-type route-message
   (lambda (msg)
-    (+ 12 (apply + (map (lambda (d) (align (data-size d) 4)) attrs))))
+    (+ 12 (route-attr-list-size (addr-message-type-attrs msg))))
   (lambda (msg pos bv)
     (match msg
       (($ route-message-type family dest-len src-len tos table protocol
@@ -52,12 +52,7 @@
        (bytevector-u8-set! bv (+ pos 6) scope)
        (bytevector-u8-set! bv (+ pos 7) type)
        (bytevector-u32-set! bv (+ pos 8) flags (native-endianness))
-       (let loop ((attrs attrs) (pos (+ pos 12)))
-         (match attrs
-           ((attr attrs ...)
-            (serialize attr pos bv)
-            (loop attrs (+ pos (align (data-size attr) 4))))
-           (() #t))))))
+       (serialize-route-attr-list attrs (+ pos 12) bv))))
   (family addr-message-family addr-message-type-family)
   (dest-len addr-message-dest-len addr-message-type-dest-len)
   (src-len addr-message-src-len addr-message-type-src-len)

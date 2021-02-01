@@ -16,7 +16,20 @@
 ;;;; 
 
 (define-module (netlink route)
-  #:export (align))
+  #:export (align
+            route-attr-list-size
+            serialize-route-attr-list))
 
 (define (align pos to)
   (+ pos -1 (- to (modulo (- pos 1) to))))
+
+(define (route-attr-list-size attrs)
+  (apply + (map (lambda (d) (align (data-size d) 4)) attrs)))
+
+(define (serialize-route-attr-list attrs pos bv)
+  (let loop ((attrs attrs) (pos pos))
+    (match attrs
+      ((attr attrs ...)
+       (serialize attr pos bv)
+       (loop attrs (+ pos (align (data-size attr) 4))))
+      (() #t))))

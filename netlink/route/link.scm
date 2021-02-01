@@ -33,7 +33,7 @@
 
 (define-data-type link-message
   (lambda (msg)
-    (+ 16 (apply + (map (lambda (d) (align (data-size d) 4)) attrs))))
+     (+ 16 (route-attr-list-size (link-message-type-attrs msg))))
   (lambda (msg pos bv)
     (match msg
       (($ link-message-type family type index flags change attrs)
@@ -42,12 +42,7 @@
        (bytevector-u32-set! bv (+ pos 4) index (native-endianness))
        (bytevector-u32-set! bv (+ pos 8) flags (native-endianness))
        (bytevector-u32-set! bv (+ pos 12) change (native-endianness))
-       (let loop ((attrs attrs) (pos (+ pos 16)))
-         (match attrs
-           ((attr attrs ...)
-            (serialize attr pos bv)
-            (loop attrs (+ pos (align (data-size attr) 4))))
-           (() #t))))))
+       (serialize-route-attr-list attrs (+ pos 16) bv))))
   (family link-message-family link-message-type-family)
   (type link-message-kind link-message-type-type)
   (index link-message-index link-message-type-index)
