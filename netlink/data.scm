@@ -20,7 +20,7 @@
   #:use-module (srfi srfi-9)
   #:export (make-nl-data
             nl-data-data nl-data-size-proc nl-data-serialize-proc
-            data-size
+            data-size ensure-data-size
             serialize deserialize
             get-current-deserialize get-next-deserialize
             define-data-type))
@@ -37,6 +37,12 @@
 
 (define (serialize data pos bv)
   ((nl-data-serialize-proc data) (nl-data-data data) pos bv))
+
+(define (ensure-data-size data size)
+  (make-nl-data
+    (nl-data-data data)
+    (const size)
+    (nl-data-serialize-proc data)))
 
 (define (get-next-deserialize decoder current-type target-type)
   (match (assoc-ref decoder current-type)

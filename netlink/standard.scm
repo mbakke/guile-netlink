@@ -43,7 +43,7 @@
 (define (deserialize-error-message decoder bv pos)
   (make-error-message
     (bytevector-s32-ref bv pos (native-endianness))
-    (deserialize 'message-hdr decoder (pk 'error-mrg bv) (+ pos 4))))
+    (deserialize 'message-hdr decoder bv (+ pos 4))))
 
 (define no-data
   (make-nl-data

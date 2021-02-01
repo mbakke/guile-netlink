@@ -64,7 +64,7 @@
         (bytevector-u32-ref bv (+ pos 8) (native-endianness))
         (bytevector-u32-ref bv (+ pos 12) (native-endianness))
         (if (< (data-size data) (- len 16))
-            (make-nl-data #f (const (- len 16)) (const (make-bytevector 0)))
+            (ensure-data-size data (- len 16))
             data)))))
 
 (define (deserialize-message-header decoder bv pos)
