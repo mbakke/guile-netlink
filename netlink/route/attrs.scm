@@ -206,6 +206,10 @@
     (,IFLA_MTU . ,deserialize-route-attr-data-u32)
     (,IFLA_LINK . ,deserialize-route-attr-data-u32)
     (,IFLA_QDISC . ,deserialize-route-attr-data-string)
+    (,IFLA_OPERSTATE . ,deserialize-route-attr-data-u8)
+    (,IFLA_LINKMODE . ,deserialize-route-attr-data-u8)
+    (,IFLA_GROUP . ,deserialize-route-attr-data-u32)
+    (,IFLA_TXQLEN . ,deserialize-route-attr-data-u32)
     ;; TODO: struct rtnl_link_stats
     ;(,IFLA_STATS . ,deserialize-route-attr-data-stats)
     (default . ,deserialize-route-attr-data-bv)))
