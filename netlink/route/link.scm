@@ -38,11 +38,12 @@
     (+ 16 (apply + (map (lambda (d) (align (data-size d) 4)) attrs))))
   (lambda (msg pos bv)
     (match msg
-      (($ link-message-type family type index flags attrs)
+      (($ link-message-type family type index flags change attrs)
        (bytevector-u16-set! bv pos family (native-endianness))
        (bytevector-u16-set! bv (+ pos 2) type (native-endianness))
        (bytevector-u32-set! bv (+ pos 4) index (native-endianness))
        (bytevector-u32-set! bv (+ pos 8) flags (native-endianness))
+       (bytevector-u32-set! bv (+ pos 12) change (native-endianness))
        (let loop ((attrs attrs) (pos (+ pos 16)))
          (match attrs
            ((attr attrs ...)
@@ -53,6 +54,7 @@
   (type link-message-kind link-message-type-type)
   (index link-message-index link-message-type-index)
   (flags link-message-flags link-message-type-flags)
+  (change link-message-change link-message-type-change)
   (attrs link-message-attrs link-message-type-attrs))
 
 (define (deserialize-link-message decoder bv pos)
@@ -61,6 +63,7 @@
     (bytevector-u16-ref bv (+ pos 2) (native-endianness))
     (bytevector-u32-ref bv (+ pos 4) (native-endianness))
     (bytevector-u32-ref bv (+ pos 8) (native-endianness))
+    (bytevector-u32-ref bv (+ pos 12) (native-endianness))
     (let ((len (bytevector-length bv)))
       (let loop ((pos (+ pos 16)) (attrs '()))
         (if (>= pos len)
