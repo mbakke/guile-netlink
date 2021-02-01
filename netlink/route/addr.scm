@@ -18,6 +18,7 @@
 (define-module (netlink route addr)
   #:use-module (ice-9 match)
   #:use-module (netlink data)
+  #:use-module (netlink route)
   #:use-module (netlink route attrs)
   #:use-module (srfi srfi-9)
   #:use-module (rnrs bytevectors)
@@ -30,9 +31,6 @@
             addr-message-index
             addr-message-attrs
             deserialize-addr-message))
-
-(define (align pos to)
-  (+ pos -1 (- to (modulo (- pos 1) to))))
 
 (define-data-type addr-message
   (lambda (msg)

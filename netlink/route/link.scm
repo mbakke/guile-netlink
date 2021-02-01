@@ -18,6 +18,7 @@
 (define-module (netlink route link)
   #:use-module (ice-9 match)
   #:use-module (netlink data)
+  #:use-module (netlink route)
   #:use-module (netlink route attrs)
   #:use-module (srfi srfi-9)
   #:use-module (rnrs bytevectors)
@@ -29,9 +30,6 @@
             link-message-flags
             link-message-attrs
             deserialize-link-message))
-
-(define (align pos to)
-  (+ pos -1 (- to (modulo (- pos 1) to))))
 
 (define-data-type link-message
   (lambda (msg)

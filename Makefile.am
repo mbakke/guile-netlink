@@ -7,6 +7,7 @@ SOURCES= \
   netlink/message.scm \
   netlink/standard.scm \
   netlink/deserialize.scm \
+  netlink/route.scm \
   netlink/route/addr.scm \
   netlink/route/attrs.scm \
   netlink/route/link.scm \
