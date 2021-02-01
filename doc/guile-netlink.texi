@@ -484,14 +484,22 @@ network links on your machine.  They are equivalent to the @command{ip link}
 family of commands, from @code{iproute2}.
 
 @deffn {Scheme Procedure} link-set @var{device} [#:up @code{#f}] @
-  [#:down @code{#f}] [#:type @code{#f}]
+  [#:down @code{#f}] [#:type @code{#f}] [#:arp-on @code{#f}] @
+  [#:arp-off @code{#f}] [#:dynamic-on @code{#f}] [#:dynamic-off @code{#f}] @
+  [#:multicast-on @code{#f}] [#:multicast-off @code{#f}] @
+  [#:allmulticast-on @code{#f}] [#:allmulticast-off @code{#f}] @
+  [#:promisc-on @code{#f}] [#:promisc-off @code{#f}] [#:trailers-on @code{#f}] @
+  [#:trailers-off @code{#f}] [#:carrier-on @code{#f}] [#:carrier-off @code{#f}] @
+  [#:txqueuelen @code{#f}] [#:name @code{#f}] [#:address @code{#f}] @
+  [#:broadcast @code{#f}] [#:mtu @code{#f}] [#:netns @code{#f}]
 Modify an existing link and set its flags and attributes to the ones specified
 by the various keywords.  When a keyword is omited, the corresponding attribute
 is not changed.
 
 @var{device} can be a device index (as a number) or a device name (as a string).
 
-Do not set @code{#:up} and @code{#:down} at the same time.
+Do not set @code{#:up} and @code{#:down} at the same time.  Do not set
+@code{*-on} and @code{*-off} at the same time.
 @end deffn
 
 @deffn {Scheme Procedure} link-show [#:device @code{#f}] [#:group @code{#f}] @

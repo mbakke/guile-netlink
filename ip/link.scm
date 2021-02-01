@@ -80,25 +80,28 @@
     (let* ((answer (receive-and-decode-msg sock %default-route-decoder))
            (links (filter
                     (lambda (msg) (equal? (message-kind msg) RTM_NEWLINK))
-                    answer)))
-      (map
-        (lambda (msg)
-          (let* ((data (message-data msg))
-                 (attrs (link-message-attrs data)))
-          (make-link
-            (get-attr attrs IFLA_IFNAME)
-            (link-message-index data)
-            (link-message-kind data)
-            (split-flags (link-message-flags data))
-            (get-attr attrs IFLA_MTU)
-            (get-attr attrs IFLA_QDISC)
-            (get-attr attrs IFLA_OPERSTATE)
-            (get-attr attrs IFLA_LINKMODE)
-            (get-attr attrs IFLA_GROUP)
-            (get-attr attrs IFLA_TXQLEN)
-            (get-attr attrs IFLA_ADDRESS)
-            (get-attr attrs IFLA_BROADCAST))))
-        links))))
+                    answer))
+           (links
+             (map
+               (lambda (msg)
+                 (let* ((data (message-data msg))
+                        (attrs (link-message-attrs data)))
+                 (make-link
+                   (get-attr attrs IFLA_IFNAME)
+                   (link-message-index data)
+                   (link-message-kind data)
+                   (split-flags (link-message-flags data))
+                   (get-attr attrs IFLA_MTU)
+                   (get-attr attrs IFLA_QDISC)
+                   (get-attr attrs IFLA_OPERSTATE)
+                   (get-attr attrs IFLA_LINKMODE)
+                   (get-attr attrs IFLA_GROUP)
+                   (get-attr attrs IFLA_TXQLEN)
+                   (get-attr attrs IFLA_ADDRESS)
+                   (get-attr attrs IFLA_BROADCAST))))
+               links)))
+      (close-socket sock)
+      links)))
 
 (define* (link-show #:key (device #f) (group #f) (up #f) (master #f) (vrf #f)
                     (type #f))
@@ -153,14 +156,31 @@ criteria."
   (let loop ((links (get-links)))
     (match links
       (() (throw 'no-such-device device))
-      ((link links)
+      ((link links ...)
        (if (equal? (link-name link) device)
            (link-id link)
            (loop links))))))
 
-(define* (link-set device #:key (up #f) (down #f) (type #f))
+(define* (link-set device #:key (up #f) (down #f) (type #f)
+                   (arp-on #f) (arp-off #f)
+                   (dynamic-on #f) (dynamic-off #f)
+                   (multicast-on #f) (multicast-off #f)
+                   (allmulticast-on #f) (allmulticast-off #f)
+                   (promisc-on #f) (promisc-off #f)
+                   (trailers-on #f) (trailers-off #f)
+                   (carrier-on #f) (carrier-off #f)
+                   (txqueuelen #f) (name #f) (address #f)
+                   (broadcast #f) (mtu #f) (netns #f))
   (define request-num (random 65535))
   (define id (if (number? device) device (link-name->index device)))
+  (define netnsfd (cond
+                    ((string? netns)
+                     (open (string-append "/var/run/netns/" netns) O_RDONLY))
+                    ((number? netns)
+                     (open (string-append "/var/run/netns/" (number->string netns))
+                           O_RDONLY))
+                    (else
+                      #f)))
   (define message
     (make-message
       RTM_NEWLINK
@@ -171,11 +191,60 @@ criteria."
         AF_UNSPEC
         (or type 0)
         id
-        (+ (if up IFF_UP 0))
-        (+ (if (or up down) IFF_UP 0))
-        '())))
+        (+ (if up IFF_UP 0)
+           (if arp-off IFF_NOARP 0)
+           (if dynamic-on IFF_DYNAMIC 0)
+           (if multicast-on IFF_MULTICAST 0)
+           (if allmulticast-on IFF_ALLMULTI 0)
+           (if promisc-on IFF_PROMISC 0)
+           (if trailers-off IFF_NOTRAILERS 0))
+        (+ (if (or up down) IFF_UP 0)
+           (if (or arp-on arp-off) IFF_NOARP 0)
+           (if (or dynamic-on dynamic-off) IFF_DYNAMIC 0)
+           (if (or multicast-on multicast-off) IFF_MULTICAST 0)
+           (if (or allmulticast-on allmulticast-off) IFF_ALLMULTI 0)
+           (if (or promisc-on promisc-off) IFF_PROMISC 0)
+           (if (or trailers-on trailers-off) IFF_NOTRAILERS 0))
+        `(,@(if (or carrier-on carrier-off)
+                (list
+                  (make-route-attr IFLA_CARRIER
+                    (make-u32-route-attr (if carrier-on 1 0))))
+                '())
+          ,@(if txqueuelen
+                (list
+                  (make-route-attr IFLA_TXQLEN
+                    (make-u32-route-attr txqueuelen)))
+                '())
+          ,@(if name
+                (list
+                  (make-route-attr IFLA_TXQLEN
+                    (make-u32-route-attr txqueuelen)))
+                '())
+          ,@(if address
+                (list
+                  (make-route-attr IFLA_ADDRESS
+                    (make-ethernet-route-attr address)))
+                '())
+          ,@(if broadcast
+                (list
+                  (make-route-attr IFLA_BROADCAST
+                    (make-ethernet-route-attr broadcast)))
+                '())
+          ,@(if mtu
+                (list
+                  (make-route-attr IFLA_MTU
+                    (make-u32-route-attr mtu)))
+                '())
+          ,@(if netns
+                (list
+                  (make-route-attr IFLA_NET_NS_FD
+                    (make-u32-route-attr
+                      (fileno netnsfd))))
+                '())))))
   (let ((sock (connect-route)))
     (send-msg message sock)
     (let ((answer (receive-and-decode-msg sock %default-route-decoder)))
+      (when netnsfd
+        (close netnsfd))
       (close-socket sock)
       answer)))
