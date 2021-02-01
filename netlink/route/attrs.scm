@@ -159,7 +159,7 @@
 
 (define (deserialize-route-attr-data-string decoder bv pos)
   (make-string-route-attr
-    (or (false-if-exception (utf8->string bv))
+    (or (false-if-exception (string-trim-right (utf8->string bv) #\nul))
         (make-string (bytevector-length bv) #\a))))
 
 (define (deserialize-route-attr-data-u32 decoder bv pos)
