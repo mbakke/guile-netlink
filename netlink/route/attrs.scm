@@ -19,9 +19,11 @@
   #:use-module (ice-9 match)
   #:use-module (netlink constant)
   #:use-module (netlink data)
+  #:use-module (netlink route)
   #:use-module (rnrs bytevectors)
   #:use-module (srfi srfi-9)
-  #:export(make-route-attr
+  #:export(deserialize-attr-list
+           make-route-attr
            route-attr?
            route-attr-kind
            route-attr-data
@@ -50,6 +52,15 @@
            %default-route-link-attr-decoder
            %default-route-route-ipv4-attr-decoder
            %default-route-route-ipv6-attr-decoder))
+
+(define (deserialize-attr-list context decoder bv pos)
+  (let ((len (bytevector-length bv)))
+    (let loop ((pos pos) (attrs '()))
+      (if (>= pos len)
+          attrs
+          (let ((attr (deserialize context decoder bv pos)))
+            (loop (+ pos (align (data-size attr) 4))
+                  (cons attr attrs)))))))
 
 (define-data-type route-attr
   attr-type-size

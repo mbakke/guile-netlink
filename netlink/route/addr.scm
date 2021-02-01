@@ -64,14 +64,9 @@
       (bytevector-u8-ref bv (+ pos 2))
       (bytevector-u8-ref bv (+ pos 3))
       (bytevector-u32-ref bv (+ pos 4) (native-endianness))
-      (let ((len (bytevector-length bv)))
-        (let loop ((pos (+ pos 8)) (attrs '()))
-          (if (>= pos len)
-              attrs
-              (let ((attr (deserialize (cond
-                                         ((equal? family AF_INET) 'ipv4-addr-attr)
-                                         ((equal? family AF_INET6) 'ipv6-addr-attr)
-                                         (else (throw 'unknown-family family)))
-                                       decoder bv pos)))
-                (loop (+ pos (align (data-size attr) 4))
-                      (cons attr attrs)))))))))
+      (deserialize-attr-list
+        (cond
+          ((equal? family AF_INET) 'ipv4-addr-attr)
+          ((equal? family AF_INET6) 'ipv6-addr-attr)
+          (else (throw 'unknown-family family)))
+        decoder bv (+ pos 8)))))

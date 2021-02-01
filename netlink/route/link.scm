@@ -62,10 +62,4 @@
     (bytevector-u32-ref bv (+ pos 4) (native-endianness))
     (bytevector-u32-ref bv (+ pos 8) (native-endianness))
     (bytevector-u32-ref bv (+ pos 12) (native-endianness))
-    (let ((len (bytevector-length bv)))
-      (let loop ((pos (+ pos 16)) (attrs '()))
-        (if (>= pos len)
-            attrs
-            (let ((attr (deserialize 'link-attr decoder bv pos)))
-              (loop (+ pos (align (data-size attr) 4))
-                    (cons attr attrs))))))))
+    (deserialize-attr-list 'link-attr decoder bv (+ pos 16))))
