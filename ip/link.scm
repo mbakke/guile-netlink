@@ -24,6 +24,8 @@
   #:use-module (netlink data)
   #:use-module (netlink deserialize)
   #:use-module (netlink message)
+  #:use-module (netlink standard)
+  #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-9)
   #:export (link-set
             link-show))
@@ -161,6 +163,21 @@ criteria."
            (link-id link)
            (loop links))))))
 
+(define (answer-ok? answer)
+  (cond
+    ((equal? (message-kind answer) NLMSG_DONE)
+     #t)
+    ((equal? (message-kind answer) NLMSG_ERROR)
+     (let ((data (message-data answer)))
+       (if (nl-data-data data)
+           (let ((err (error-message-err data)))
+             (if (equal? err 0)
+                 #t
+                 (begin
+                   (format #t "RTNETLINK answers: ~a~%" (strerror (- err)))
+                   #f)))
+           #f)))))
+
 (define* (link-set device #:key (up #f) (down #f) (type #f)
                    (arp-on #f) (arp-off #f)
                    (dynamic-on #f) (dynamic-off #f)
@@ -247,4 +264,4 @@ criteria."
       (when netnsfd
         (close netnsfd))
       (close-socket sock)
-      answer)))
+      (answer-ok? (last answer)))))
