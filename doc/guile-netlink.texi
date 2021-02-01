@@ -32,6 +32,7 @@ implementation of the netlink protocol.
 @menu
 * Introduction::           What is netlink?
 * API Reference::          Description of the library interface.
+* IP Library::             High-level functions for network devices.
 
 @detailmenu
 --- The Detailed Node Listing ---
@@ -42,6 +43,10 @@ API Reference
                            protocols.
 * Netlink API::            Common structures and data types for every protocols.
 * Rtnetlink API::          The ROUTE_NETLINK protocol.
+
+IP Library
+
+* Link::                   Actions on network links.
 
 @end detailmenu
 @end menu
@@ -463,6 +468,37 @@ The index of the device this address is for.
 A list of attributes.  This field must contain a list of @code{nl-data}
 structures, not a structure by itself.
 @end table
+@end deffn
+
+@node IP Library
+@chapter IP Library
+
+This library comes with higher-level procedures that let you access and modify
+the state of network on your computer.
+
+@node Link
+@section Link
+
+The @code{(ip link)} module introduces procedures to access and modify the
+network links on your machine.  They are equivalent to the @command{ip link}
+family of commands, from @code{iproute2}.
+
+@deffn {Scheme Procedure} link-set @var{device} [#:up @code{#f}] @
+  [#:down @code{#f}] [#:type @code{#f}]
+Modify an existing link and set its flags and attributes to the ones specified
+by the various keywords.  When a keyword is omited, the corresponding attribute
+is not changed.
+
+@var{device} can be a device index (as a number) or a device name (as a string).
+
+Do not set @code{#:up} and @code{#:down} at the same time.
+@end deffn
+
+@deffn {Scheme Procedure} link-show [#:device @code{#f}] [#:group @code{#f}] @
+  [#:up @code{#f}] [#:master @code{#f}] [#:vrf @code{#f}] [#:type @code{#f}]
+Print the set of devices on standard output.  Setting any of the keyword to a
+non-false value will filter the results to only show results that match the
+corresponding value.  You may set more than one keyword.
 @end deffn
 
 @bye
