@@ -509,4 +509,23 @@ non-false value will filter the results to only show results that match the
 corresponding value.  You may set more than one keyword.
 @end deffn
 
+@deffn {Scheme Procedure} link-add @var{name} @var{type} [#:type-args @code{'()}]
+Add a new link with given name and type.  Additional arguments can be passed to
+control the state of the link at creation. @var{type-args} is an association
+list containing additional values for the given type.
+
+When @var{type} is @code{"vlan"}, @var{type-args} can contain a number associated
+with @code{'id}: the VLAN id to be created.
+
+When @var{type} is @code{"veth"}, @var{type-args} can contain a string associated
+with @code{'peer}: the name of the peer.
+
+The following is an example in which we create a new veth (virtual ethernet)
+pair and give them a name:
+@example
+;; same as "ip l add v0p0 type veth peer v0p1"
+(link-add "v0p0" "veth" #:type-args '((peer . "v0p1")))
+@end example
+@end deffn
+
 @bye

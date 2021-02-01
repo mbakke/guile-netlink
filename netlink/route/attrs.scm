@@ -32,17 +32,19 @@
            make-u16-route-attr
            make-u32-route-attr
            make-s32-route-attr
+           make-nested-route-attr
            make-string-route-attr
            make-ethernet-route-attr
            make-ipv4-route-attr
            make-ipv6-route-attr
            make-bv-route-attr
            deserialize-route-attr
-           deserialize-route-attr-data-string
            deserialize-route-attr-data-u8
            deserialize-route-attr-data-u16
            deserialize-route-attr-data-u32
            deserialize-route-attr-data-s32
+           deserialize-route-attr-data-nested
+           deserialize-route-attr-data-string
            deserialize-route-attr-data-ethernet
            deserialize-route-attr-data-ipv4
            deserialize-route-attr-data-ipv6
@@ -50,6 +52,7 @@
            %default-route-addr-ipv4-attr-decoder
            %default-route-addr-ipv6-attr-decoder
            %default-route-link-attr-decoder
+           %default-route-link-info-attr-decoder
            %default-route-route-ipv4-attr-decoder
            %default-route-route-ipv6-attr-decoder))
 
@@ -103,6 +106,12 @@
     (const 4)
     (lambda (data pos bv)
       (bytevector-s32-set! bv pos data (native-endianness)))))
+
+(define (make-nested-route-attr lst)
+  (make-nl-data
+    lst
+    route-attr-list-size
+    serialize-route-attr-list))
 
 (define (make-string-route-attr str)
   (make-nl-data
@@ -171,6 +180,11 @@
               type
               (deserialize decoder data-bv 0)))))))
 
+(define (deserialize-route-attr-data-nested attr-type)
+  (lambda (decoder bv pos)
+    (make-nested-route-attr
+      (deserialize-attr-list attr-type decoder bv pos))))
+
 (define (deserialize-route-attr-data-string decoder bv pos)
   (make-string-route-attr
     (or (false-if-exception (string-trim-right (utf8->string bv) #\nul))
@@ -228,8 +242,13 @@
     (,IFLA_LINKMODE . ,deserialize-route-attr-data-u8)
     (,IFLA_GROUP . ,deserialize-route-attr-data-u32)
     (,IFLA_TXQLEN . ,deserialize-route-attr-data-u32)
+    (,IFLA_LINKINFO . ,(deserialize-route-attr-data-nested 'linkinfo-attr))
     ;; TODO: struct rtnl_link_stats
     ;(,IFLA_STATS . ,deserialize-route-attr-data-stats)
+    (default . ,deserialize-route-attr-data-bv)))
+
+(define %default-route-link-info-attr-decoder
+  `((,IFLA_INFO_KIND . ,deserialize-route-attr-data-string)
     (default . ,deserialize-route-attr-data-bv)))
 
 (define (default-route-addr-attr-decoder address-decoder)

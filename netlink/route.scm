@@ -16,6 +16,8 @@
 ;;;; 
 
 (define-module (netlink route)
+  #:use-module (ice-9 match)
+  #:use-module (netlink data)
   #:export (align
             route-attr-list-size
             serialize-route-attr-list))

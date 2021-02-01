@@ -27,7 +27,8 @@
   #:use-module (netlink standard)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-9)
-  #:export (link-set
+  #:export (link-add
+            link-set
             link-show))
 
 (define-record-type <link>
@@ -263,5 +264,54 @@ criteria."
     (let ((answer (receive-and-decode-msg sock %default-route-decoder)))
       (when netnsfd
         (close netnsfd))
+      (close-socket sock)
+      (answer-ok? (last answer)))))
+
+(define* (link-add name type #:key (type-args '()))
+  (define request-num (random 65535))
+  (define type-data
+    (match type
+      ("vlan"
+       `(,@(if (assoc-ref type-args 'id)
+               (list (make-route-attr IFLA_VLAN_ID
+                       (make-u16-route-attr (assoc-ref type-args 'id))))
+               '())))
+      ("veth"
+       `(,@(if (assoc-ref type-args 'peer)
+               (list (make-route-attr VETH_INFO_PEER
+                       (make-link-message
+                         AF_UNSPEC 0 0 0 0
+                         (list
+                           (make-route-attr IFLA_IFNAME
+                             (make-string-route-attr
+                               (assoc-ref type-args 'peer)))))))
+               '())))
+      ;; TODO: unsupported for now
+      (_ '())))
+  (define message
+    (make-message
+      RTM_NEWLINK
+      (logior NLM_F_REQUEST NLM_F_ACK NLM_F_EXCL NLM_F_CREATE)
+      request-num
+      0
+      (make-link-message
+        AF_UNSPEC
+        0
+        0
+        0
+        0
+        (list
+          (make-route-attr IFLA_IFNAME
+            (make-string-route-attr name))
+          (make-route-attr IFLA_LINKINFO
+            (make-nested-route-attr
+              (list
+                (make-route-attr IFLA_INFO_KIND
+                  (make-string-route-attr type))
+                (make-route-attr IFLA_INFO_DATA
+                  (make-nested-route-attr type-data)))))))))
+  (let ((sock (connect-route)))
+    (send-msg message sock)
+    (let ((answer (receive-and-decode-msg sock %default-route-decoder)))
       (close-socket sock)
       (answer-ok? (last answer)))))
