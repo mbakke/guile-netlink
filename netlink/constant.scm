@@ -284,3 +284,9 @@
   (RT_TABLE_DEFAULT 253)
   (RT_TABLE_MAIN 254)
   (RT_TABLE_LOCAL 255))
+
+;; link type
+;; more at include/uapi/linux/if_arp.h
+(define-enum int->link-type
+  (ARPHRD_ETHER 1)
+  (ARPHRD_LOOPBACK 772))
