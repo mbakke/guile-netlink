@@ -179,7 +179,11 @@
 
 (define (deserialize-route-attr-data-ethernet decoder bv pos)
   (make-ethernet-route-attr
-    (string-join (map (lambda (n) (number->string n 16))
+    (string-join (map (lambda (n)
+                        (let ((s (number->string n 16)))
+                          (if (equal? (string-length s) 1)
+                              (string-append "0" s)
+                              s)))
                       (bytevector->u8-list bv))
                  ":")))
 
