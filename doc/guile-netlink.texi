@@ -528,4 +528,9 @@ pair and give them a name:
 @end example
 @end deffn
 
+@deffn {Scheme Procedure} link-del @var{device}
+Delete a link.  @var{device} can contain the name of the link, as a string,
+or its index, as a number.
+@end deffn
+
 @bye

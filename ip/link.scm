@@ -28,6 +28,7 @@
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-9)
   #:export (link-add
+            link-del
             link-set
             link-show))
 
@@ -310,6 +311,32 @@ criteria."
                   (make-string-route-attr type))
                 (make-route-attr IFLA_INFO_DATA
                   (make-nested-route-attr type-data)))))))))
+  (let ((sock (connect-route)))
+    (send-msg message sock)
+    (let ((answer (receive-and-decode-msg sock %default-route-decoder)))
+      (close-socket sock)
+      (answer-ok? (last answer)))))
+
+(define* (link-del device)
+  (define request-num (random 65535))
+
+  (define message
+    (make-message
+      RTM_DELLINK
+      (logior NLM_F_REQUEST NLM_F_ACK)
+      request-num
+      0
+      (make-link-message
+        AF_UNSPEC
+        0
+        (cond
+          ((number? device) device)
+          ((string? device) (link-name->index device)))
+        0
+        0
+        '())))
+
+
   (let ((sock (connect-route)))
     (send-msg message sock)
     (let ((answer (receive-and-decode-msg sock %default-route-decoder)))
