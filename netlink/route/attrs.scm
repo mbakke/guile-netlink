@@ -150,12 +150,15 @@
   (lambda (decoder bv pos)
     (let* ((len (bytevector-u16-ref bv pos (native-endianness)))
            (type (bytevector-u16-ref bv (+ pos 2) (native-endianness)))
-           (deserialize (get-next-deserialize decoder message-type type))
-           (data-bv (make-bytevector (- len 4))))
-      (bytevector-copy! bv (+ pos 4) data-bv 0 (- len 4))
-      (make-route-attr
-        type
-        (deserialize decoder data-bv 0)))))
+           (deserialize (get-next-deserialize decoder message-type type)))
+      (if (= len 0)
+          (let ((data-bv (make-bytevector 0)))
+            (make-route-attr type (deserialize decoder data-bv 0)))
+          (let ((data-bv (make-bytevector (- len 4))))
+            (bytevector-copy! bv (+ pos 4) data-bv 0 (- len 4))
+            (make-route-attr
+              type
+              (deserialize decoder data-bv 0)))))))
 
 (define (deserialize-route-attr-data-string decoder bv pos)
   (make-string-route-attr
