@@ -250,6 +250,23 @@
   IF_OPER_LOWERLAYERDOWN IF_OPER_TESTING IF_OPER_DORMANT
   IF_OPER_UP)
 
+;; ifa_flags
+(define-enum int->ifa-flag
+  (IFA_F_SECONDARY      #x01)
+  (IFA_F_TEMPORARY      #x01) 
+  (IFA_F_NODAD          #x02)
+  (IFA_F_OPTIMISTIC     #x04)
+  (IFA_F_DADFAILED      #x08)
+  (IFA_F_HOMEADDRESS    #x10)
+  (IFA_F_DEPRECATED     #x20)
+  (IFA_F_TENTATIVE      #x40)
+  (IFA_F_PERMANENT      #x80)
+  (IFA_F_MANAGETEMPADDR #x100)
+  (IFA_F_NOPREFIXROUTE  #x200)
+  (IFA_F_MCAUTOJOIN     #x400)
+  (IFA_F_STABLE_PRIVACY #x800))
+
+
 ;; rtm_type
 (define-enum int->rtm-type
   RTN_UNSPEC RTN_UNICAST RTN_LOCAL RTN_BROADCAST RTN_ANYCAST

@@ -27,9 +27,23 @@
   #:use-module (netlink message)
   #:use-module (netlink standard)
   #:use-module (srfi srfi-1)
+  #:use-module (srfi srfi-9)
   #:export (addr-add
             addr-del
             addr-show))
+
+(define-record-type <addr>
+  (make-addr family prefix flags scope link label addr brd cacheinfo)
+  addr?
+  (family    addr-family)
+  (prefix    addr-prefix)
+  (flags     addr-flags)
+  (scope     addr-scope)
+  (link      addr-link)
+  (label     addr-label)
+  (addr      addr-addr)
+  (brd       addr-brd)
+  (cacheinfo addr-cacheinfo))
 
 (define (cidr->addr str)
   (match (string-split str #\/)
@@ -122,3 +136,88 @@
     (let ((answer (receive-and-decode-msg sock %default-route-decoder)))
       (close-socket sock)
       (answer-ok? (last answer)))))
+
+(define (get-addrs)
+  (define request-num (random 65535))
+  (define message
+    (make-message
+      RTM_GETADDR
+      (logior NLM_F_REQUEST NLM_F_DUMP)
+      request-num
+      0
+      (make-addr-message AF_UNSPEC 0 0 0 0 '())))
+  (let ((sock (connect-route)))
+    (send-msg message sock)
+    (let* ((answer (receive-and-decode-msg sock %default-route-decoder))
+           (addrs (filter
+                    (lambda (msg) (equal? (message-kind msg) RTM_NEWADDR))
+                    answer))
+           (addrs (map
+                    (lambda (msg)
+                      (let* ((data (message-data msg))
+                             (attrs (addr-message-attrs data)))
+                        (make-addr
+                          (addr-message-family data)
+                          (addr-message-prefix-len data)
+                          (map
+                            int->ifa-flag
+                            (split-flags (logior (addr-message-flags data)
+                                                 (get-attr attrs IFA_FLAGS))))
+                          (addr-message-scope data)
+                          (addr-message-index data)
+                          (get-attr attrs IFA_LABEL)
+                          (get-attr attrs IFA_ADDRESS)
+                          (get-attr attrs IFA_BROADCAST)
+                          (get-attr attrs IFA_CACHEINFO))))
+                    addrs)))
+      (close-socket sock)
+      addrs)))
+
+(define print-addr
+  (match-lambda
+    (($ <addr> family prefix flags scope link label addr brd cacheinfo)
+     (format #t "    ~a ~a"
+             (match family (AF_INET "inet") (AF_INET6 "inet6"))
+             addr)
+     (when brd
+       (format #t " brd ~a" brd))
+     (when scope
+       (format #t " scope ~a"
+               (match scope
+                 (RT_SCOPE_UNIVERSE "global")
+                 (_ (substring (symbol->string (int->rtm-scope scope)) 8)))))
+
+     (for-each
+       (lambda (flag)
+         (unless (equal? flag 'IFA_F_PERMANENT)
+           (format #t " ~a"
+                   (substring (symbol->string flag) 6))))
+       flags)
+
+     (when label
+       (format #t " ~a" label))
+
+     (format #t "~%")
+     (when cacheinfo
+       (if (member 'IFA_F_PERMANENT flags)
+           (format #t "        valid_lft forever preferred_lft forever~%")
+           (format #t "        valid_lft ??sec preferred_lft ??sec~%"))))))
+
+
+(define* (addr-show #:optional (device #f))
+  (define links (get-links))
+  (define index
+    (cond
+      ((number? device) device)
+      ((string? device) (link-name->index device))
+      (else #f)))
+  (define addrs (get-addrs))
+
+  (for-each
+    (lambda (link)
+      (unless (and index (not (equal? (link-id link) index)))
+        (print-link link)
+        (for-each print-addr
+                  (filter (lambda (addr) (equal? (link-id link) (addr-link addr)))
+                          addrs))))
+    links))

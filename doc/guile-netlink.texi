@@ -647,4 +647,10 @@ Note that using the wrong ip type with the wrong value for the @code{#:ipv6?}
 flag will result in a @code{Bad address} exception from inet-pton.
 @end deffn
 
+@deffn {Scheme Procedure} addr-show [@var{device}]
+Print the list of addresses for each device on standard output.  Setting
+@code{device} to a link name or link identifier will restrict the output
+to addresses of that device.
+@end deffn
+
 @bye

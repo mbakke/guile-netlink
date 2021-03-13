@@ -257,6 +257,7 @@
     (,IFA_LABEL . ,deserialize-route-attr-data-string)
     (,IFA_BROADCAST . ,address-decoder)
     (,IFA_ANYCAST . ,address-decoder)
+    (,IFA_FLAGS . ,deserialize-route-attr-data-u32)
     ;; TODO: struct ifa_cacheinfo
     ;(,IFA_CACHEINFO . ,deserialize-route-attr-data-cache-info)
     (default . ,deserialize-route-attr-data-bv)))
