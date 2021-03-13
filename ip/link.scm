@@ -32,7 +32,13 @@
             link-del
             link-set
             link-show
-            link-name->index))
+            link-name->index
+            get-links
+            print-link
+
+            <link> make-link link?
+            link-name link-id link-type link-flags link-mtu link-qdisc
+            link-state link-mode link-group link-qlen link-addr link-brd))
 
 (define-record-type <link>
   (make-link name id type flags mtu qdisc state mode group qlen addr brd)
@@ -109,42 +115,42 @@
       (close-socket sock)
       links)))
 
+(define print-link
+  (match-lambda
+    (($ <link> name id type flags mtu qdisc state mode group qlen addr brd)
+     (format #t "~a: ~a: <~a>" id name
+             (string-join 
+               (map
+                 (lambda (s)
+                   ;; IFF_UP -> UP
+                   (substring (symbol->string s) 4))
+                 flags)
+               ","))
+     (when mtu
+       (format #t " mtu ~a" mtu))
+     (when qdisc
+       (format #t " qdisc ~a" qdisc))
+     (when state
+       (format #t " state ~a"
+               (substring (symbol->string (int->operstate state)) 8)))
+     (when mode
+       (format #t " mode ~a" (match mode (0 "DEFAULT") (1 "DORMANT"))))
+     (when group
+       (format #t " group ~a" (match group (0 "DEFAULT"))))
+     (when qlen
+       (format #t " qlen ~a" qlen))
+     (newline)
+     (cond
+       ((equal? type ARPHRD_ETHER)
+        (format #t "    link/ether ~a brd ~a~%" addr brd))
+       ((equal? type ARPHRD_LOOPBACK)
+        (format #t "    link/loopback ~a brd ~a~%" addr brd))))))
+
 (define* (link-show #:key (device #f) (group #f) (up #f) (master #f) (vrf #f)
                     (type #f))
   "Return a list whose elements represent the data about the links.  If a key
 is given, the resulting list is limited to those elements that match the given
 criteria."
-  (define print-link
-    (match-lambda
-      (($ <link> name id type flags mtu qdisc state mode group qlen addr brd)
-       (format #t "~a: ~a: <~a>" id name
-               (string-join 
-                 (map
-                   (lambda (s)
-                     ;; IFF_UP -> UP
-                     (substring (symbol->string s) 4))
-                   flags)
-                 ","))
-       (when mtu
-         (format #t " mtu ~a" mtu))
-       (when qdisc
-         (format #t " qdisc ~a" qdisc))
-       (when state
-         (format #t " state ~a"
-                 (substring (symbol->string (int->operstate state)) 8)))
-       (when mode
-         (format #t " mode ~a" (match mode (0 "DEFAULT") (1 "DORMANT"))))
-       (when group
-         (format #t " group ~a" (match group (0 "DEFAULT"))))
-       (when qlen
-         (format #t " qlen ~a" qlen))
-       (newline)
-       (cond
-         ((equal? type ARPHRD_ETHER)
-          (format #t "    link/ether ~a brd ~a~%" addr brd))
-         ((equal? type ARPHRD_LOOPBACK)
-          (format #t "    link/loopback ~a brd ~a~%" addr brd))))))
-
   (for-each
     (lambda (link)
       (match link

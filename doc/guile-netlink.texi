@@ -483,6 +483,69 @@ The @code{(ip link)} module introduces procedures to access and modify the
 network links on your machine.  They are equivalent to the @command{ip link}
 family of commands, from @code{iproute2}.
 
+@deffn {Datatype} <link>
+
+Datatype representing the status of a network link.
+
+get-links                                                           
+            print-link                                                          
+                                                                                
+            <link> make-link link?                                              
+            link-name link-id link-type link-flags link-mtu link-qdisc          
+            link-state link-mode link-group link-qlen link-addr link-brd
+
+@table @asis
+@item @code{name}
+Name of the link, such as @code{"enp1s0"}.
+
+@item @code{id}
+Index of the link, a unique number used to identify the link.
+
+@item @code{type}
+Type of the link, as an integer.
+
+@item @code{flags}
+Flags associated with the device, as a list of symbols, such as
+@code{'(UP LOOPBACK)}.
+
+@item @code{mtu}
+MTU of the link, as an integer.
+
+@item @code{qdisc}
+Queuing discipline of the link, as a string, such as @code{"noqueue"}.
+
+@item @code{state}
+State of the link, as an integer.  Use @code{int->operstate} from
+@code{(netlink constant)} to get a symbol, such as @code{IF_OPER_UP}.
+
+@item @code{mode}
+Mode of the link.  0 means @code{DORMANT}, 1 means @code{DEFAULT}.
+
+@item @code{group}
+Identifier of the group it belongs to.  0 for @code{default}.
+
+@item @code{qlen}
+Size of the queue.
+
+@item @code{addr}
+Ethernet address of the link, as a string.
+
+@item @code{brd}
+Broadcast (ethernet) address of the link, as a string.
+
+@end table
+@end deffn
+
+@deffn {Scheme Procedure} get-links
+Returns the list of existing links in the system, as a list of @code{<link>}
+objects.
+@end deffn
+
+@deffn {Sceme Procedure} print-link @var{link}
+Display @var{link} on the standard output, using a format similar to
+@command{ip link} from @code{iproute2}.
+@end deffn
+
 @deffn {Scheme Procedure} link-set @var{device} [#:up @code{#f}] @
   [#:down @code{#f}] [#:type @code{#f}] [#:arp-on @code{#f}] @
   [#:arp-off @code{#f}] [#:dynamic-on @code{#f}] [#:dynamic-off @code{#f}] @
