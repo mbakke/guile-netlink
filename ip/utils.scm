@@ -1,19 +1,19 @@
 ;;;; Copyright (C) 2021 Julien Lepiller <julien@lepiller.eu>
-;;;; 
+;;;;
 ;;;; This library is free software; you can redistribute it and/or
 ;;;; modify it under the terms of the GNU Lesser General Public
 ;;;; License as published by the Free Software Foundation; either
 ;;;; version 3 of the License, or (at your option) any later version.
-;;;; 
+;;;;
 ;;;; This library is distributed in the hope that it will be useful,
 ;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 ;;;; Lesser General Public License for more details.
-;;;; 
+;;;;
 ;;;; You should have received a copy of the GNU Lesser General Public
 ;;;; License along with this library; if not, write to the Free Software
 ;;;; Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
-;;;; 
+;;;;
 
 (define-module (ip utils)
   #:use-module (ice-9 match)
@@ -23,7 +23,8 @@
   #:use-module (netlink route attrs)
   #:use-module (netlink standard)
   #:export (answer-ok?
-            get-attr))
+            get-attr
+            split-flags))
 
 (define (answer-ok? answer)
   (cond
@@ -45,3 +46,16 @@
     (match attrs
       (() #f)
       ((attr) (nl-data-data (route-attr-data attr))))))
+
+(define (split-flags flags)
+  (let loop ((max-flag 262144) (flags flags) (result '()))
+    (cond
+      ((equal? max-flag 1)
+       (if (equal? flags 1)
+           (cons 1 result)
+           result))
+      ((< flags max-flag)
+       (loop (/ max-flag 2) flags result))
+      (else
+        (loop (/ max-flag 2) (- flags max-flag)
+              (cons max-flag result))))))

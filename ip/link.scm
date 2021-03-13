@@ -56,21 +56,6 @@
   (addr  link-addr)
   (brd   link-brd))
 
-(define (split-flags flags)
-  (let loop ((max-flag 262144) (flags flags) (result '()))
-    (cond
-      ((equal? max-flag 1)
-       (if (equal? flags 1)
-           (cons (int->device-flags 1) result)
-           result))
-      ((< flags max-flag)
-       (loop (/ max-flag 2) flags result))
-      (else
-        (loop (/ max-flag 2) (- flags max-flag)
-              (cons
-                (int->device-flags max-flag)
-                result))))))
-
 (define (get-links)
   (define request-num (random 65535))
   (define message
@@ -96,7 +81,7 @@
                    (get-attr attrs IFLA_IFNAME)
                    (link-message-index data)
                    (link-message-kind data)
-                   (split-flags (link-message-flags data))
+                   (map int->device-flags (split-flags (link-message-flags data)))
                    (get-attr attrs IFLA_MTU)
                    (get-attr attrs IFLA_QDISC)
                    (get-attr attrs IFLA_OPERSTATE)
