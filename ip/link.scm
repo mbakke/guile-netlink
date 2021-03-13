@@ -56,12 +56,6 @@
   (addr  link-addr)
   (brd   link-brd))
 
-(define (get-attr attrs type)
-  (let ((attrs (filter (lambda (attr) (equal? (route-attr-kind attr) type)) attrs)))
-    (match attrs
-      (() #f)
-      ((attr) (nl-data-data (route-attr-data attr))))))
-
 (define (split-flags flags)
   (let loop ((max-flag 262144) (flags flags) (result '()))
     (cond

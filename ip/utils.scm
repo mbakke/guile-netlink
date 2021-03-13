@@ -16,11 +16,14 @@
 ;;;; 
 
 (define-module (ip utils)
+  #:use-module (ice-9 match)
   #:use-module (netlink constant)
   #:use-module (netlink data)
   #:use-module (netlink message)
+  #:use-module (netlink route attrs)
   #:use-module (netlink standard)
-  #:export (answer-ok?))
+  #:export (answer-ok?
+            get-attr))
 
 (define (answer-ok? answer)
   (cond
@@ -36,3 +39,9 @@
                    (format #t "RTNETLINK answers: ~a~%" (strerror (- err)))
                    #f)))
            #f)))))
+
+(define (get-attr attrs type)
+  (let ((attrs (filter (lambda (attr) (equal? (route-attr-kind attr) type)) attrs)))
+    (match attrs
+      (() #f)
+      ((attr) (nl-data-data (route-attr-data attr))))))
