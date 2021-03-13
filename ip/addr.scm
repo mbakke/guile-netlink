@@ -82,3 +82,43 @@
     (let ((answer (receive-and-decode-msg sock %default-route-decoder)))
       (close-socket sock)
       (answer-ok? (last answer)))))
+
+(define* (addr-add device cidr #:key (ipv6? #f))
+  (define request-num (random 65535))
+  (define prefix (cidr->prefix cidr))
+  (define addr (cidr->addr cidr))
+
+  (define index
+    (cond
+      ((number? device) device)
+      ((string? device) (link-name->index device))))
+
+  (define message
+    (make-message
+      RTM_NEWADDR
+      (logior NLM_F_REQUEST NLM_F_ACK NLM_F_EXCL NLM_F_CREATE)
+      request-num
+      0
+      (make-addr-message
+        (if ipv6? AF_INET6 AF_INET)
+        (if prefix prefix 0)
+        0
+        0
+        index
+        (list
+          (make-route-attr IFA_LOCAL
+            ((if ipv6?
+                 make-ipv6-route-attr
+                 make-ipv4-route-attr)
+             addr))
+          (make-route-attr IFA_ADDRESS
+            ((if ipv6?
+                 make-ipv6-route-attr
+                 make-ipv4-route-attr)
+             addr))))))
+
+  (let ((sock (connect-route)))
+    (send-msg message sock)
+    (let ((answer (receive-and-decode-msg sock %default-route-decoder)))
+      (close-socket sock)
+      (answer-ok? (last answer)))))
