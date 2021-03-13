@@ -17,6 +17,7 @@
 
 (define-module (ip link)
   #:use-module (ice-9 match)
+  #:use-module (ip utils)
   #:use-module (netlink route attrs)
   #:use-module (netlink route link)
   #:use-module (netlink connection)
@@ -30,7 +31,8 @@
   #:export (link-add
             link-del
             link-set
-            link-show))
+            link-show
+            link-name->index))
 
 (define-record-type <link>
   (make-link name id type flags mtu qdisc state mode group qlen addr brd)
@@ -164,21 +166,6 @@ criteria."
        (if (equal? (link-name link) device)
            (link-id link)
            (loop links))))))
-
-(define (answer-ok? answer)
-  (cond
-    ((equal? (message-kind answer) NLMSG_DONE)
-     #t)
-    ((equal? (message-kind answer) NLMSG_ERROR)
-     (let ((data (message-data answer)))
-       (if (nl-data-data data)
-           (let ((err (error-message-err data)))
-             (if (equal? err 0)
-                 #t
-                 (begin
-                   (format #t "RTNETLINK answers: ~a~%" (strerror (- err)))
-                   #f)))
-           #f)))))
 
 (define* (link-set device #:key (up #f) (down #f) (type #f)
                    (arp-on #f) (arp-off #f)

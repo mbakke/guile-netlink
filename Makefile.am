@@ -12,6 +12,8 @@ SOURCES= \
   netlink/route/attrs.scm \
   netlink/route/link.scm \
   netlink/route/route.scm \
-  ip/link.scm
+  ip/addr.scm \
+  ip/link.scm \
+  ip/utils.scm
 
 info_TEXINFOS= doc/guile-netlink.texi

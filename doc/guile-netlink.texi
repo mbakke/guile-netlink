@@ -533,4 +533,33 @@ Delete a link.  @var{device} can contain the name of the link, as a string,
 or its index, as a number.
 @end deffn
 
+@node Addr
+@section Addr
+
+The @code{(ip addr)} module introduces procedures to access and modify the
+network addresses on your machine.  They are equivalent to the @command{ip addr}
+family of commands, from @code{iproute2}.
+
+@deffn {Scheme Procedure} addr-del @var{device} @var{cidr} [@var{#:ipv6?} #f]
+Delete the address given in @var{cidr} from @var{device}. @var{device} can
+contain the name of the link, as a string, or its index, as a number.
+
+@var{cidr} must be a string containing the address and prefix length, in
+CIDR notation (@code{addr/prefix}).
+
+@example
+(addr-del "enp1s0" "192.0.2.15/24")
+@end example
+
+If you wish to remove an IPv6 address instead, set @code{#:ipv6} to @code{#t},
+as in the following example.
+
+@example
+(addr-del "enp1s0" "2001:db8::1a4c/64" #:ipv6? #t)
+@end example
+
+Note that using the wrong ip type with the wrong value for the @code{#:ipv6?}
+flag will result in a @code{Bad address} error from netlink.
+@end deffn
+
 @bye
