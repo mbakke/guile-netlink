@@ -28,6 +28,16 @@
            route-attr-kind
            route-attr-data
            route-attr-size
+           make-route-cache-info-attr
+           route-cache-info-attr?
+           route-cache-info-attr-prefered
+           route-cache-info-attr-valid
+           route-cache-info-attr-cstamp
+           route-cache-info-attr-tstamp
+           route-cache-info-attr-type-prefered
+           route-cache-info-attr-type-valid
+           route-cache-info-attr-type-cstamp
+           route-cache-info-attr-type-tstamp
            make-u8-route-attr
            make-u16-route-attr
            make-u32-route-attr
@@ -37,6 +47,7 @@
            make-ethernet-route-attr
            make-ipv4-route-attr
            make-ipv6-route-attr
+           make-addr-cache-info-attr
            make-bv-route-attr
            deserialize-route-attr
            deserialize-route-attr-data-u8
@@ -48,6 +59,7 @@
            deserialize-route-attr-data-ethernet
            deserialize-route-attr-data-ipv4
            deserialize-route-attr-data-ipv6
+           deserialize-route-attr-data-route-cache-info
            deserialize-route-attr-data-bv
            %default-route-addr-ipv4-attr-decoder
            %default-route-addr-ipv6-attr-decoder
@@ -78,6 +90,20 @@
 
 (define (attr-type-size attr)
   (+ 4 (data-size (route-attr-type-data attr))))
+
+(define-data-type route-cache-info-attr
+  (const 16)
+  (lambda (attr pos bv)
+    (match attr
+      (($ route-cache-info-attr-type prefered valid cstamp tstamp)
+       (bytevector-u32-set! bv pos prefered (native-endianness))
+       (bytevector-u32-set! bv (+ pos 4) valid (native-endianness))
+       (bytevector-u32-set! bv (+ pos 8) cstamp (native-endianness))
+       (bytevector-u32-set! bv (+ pos 12) tstamp (native-endianness)))))
+  (prefered route-cache-info-attr-prefered route-cache-info-attr-type-prefered)
+  (valid route-cache-info-attr-valid route-cache-info-attr-type-valid)
+  (cstamp route-cache-info-attr-cstamp route-cache-info-attr-type-cstamp)
+  (tstamp route-cache-info-attr-tstamp route-cache-info-attr-type-tstamp))
 
 (define (make-u8-route-attr num)
   (make-nl-data
@@ -231,6 +257,13 @@
   (make-ipv6-route-attr
     (inet-ntop AF_INET6 (ipv6->number bv))))
 
+(define (deserialize-route-attr-data-route-cache-info decoder bv pos)
+  (make-route-cache-info-attr
+    (bytevector-u32-ref bv pos (native-endianness))
+    (bytevector-u32-ref bv (+ pos 4) (native-endianness))
+    (bytevector-u32-ref bv (+ pos 8) (native-endianness))
+    (bytevector-u32-ref bv (+ pos 12) (native-endianness))))
+
 (define %default-route-link-attr-decoder
   `((,IFLA_ADDRESS . ,deserialize-route-attr-data-ethernet)
     (,IFLA_BROADCAST . ,deserialize-route-attr-data-ethernet)
@@ -258,8 +291,7 @@
     (,IFA_BROADCAST . ,address-decoder)
     (,IFA_ANYCAST . ,address-decoder)
     (,IFA_FLAGS . ,deserialize-route-attr-data-u32)
-    ;; TODO: struct ifa_cacheinfo
-    ;(,IFA_CACHEINFO . ,deserialize-route-attr-data-cache-info)
+    (,IFA_CACHEINFO . ,deserialize-route-attr-data-route-cache-info)
     (default . ,deserialize-route-attr-data-bv)))
 
 (define (default-route-route-attr-decoder address-decoder)

@@ -201,7 +201,9 @@
      (when cacheinfo
        (if (member 'IFA_F_PERMANENT flags)
            (format #t "        valid_lft forever preferred_lft forever~%")
-           (format #t "        valid_lft ??sec preferred_lft ??sec~%"))))))
+           (format #t "        valid_lft ~asec preferred_lft ~asec~%"
+                   (route-cache-info-attr-type-valid cacheinfo)
+                   (route-cache-info-attr-type-prefered cacheinfo)))))))
 
 
 (define* (addr-show #:optional (device #f))
