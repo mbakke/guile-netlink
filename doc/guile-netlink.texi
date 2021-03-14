@@ -47,6 +47,8 @@ API Reference
 IP Library
 
 * Link::                   Actions on network links.
+* Addr::                   Actions on network addresses.
+* Route::                  Actions on network routes.
 
 @end detailmenu
 @end menu
@@ -614,7 +616,7 @@ CIDR notation (@code{addr/prefix}).
 (addr-add "enp1s0" "192.0.2.15/24")
 @end example
 
-If you wish to remove an IPv6 address instead, set @code{#:ipv6} to @code{#t},
+If you wish to add an IPv6 address instead, set @code{#:ipv6} to @code{#t},
 as in the following example.
 
 @example
@@ -651,6 +653,82 @@ flag will result in a @code{Bad address} exception from inet-pton.
 Print the list of addresses for each device on standard output.  Setting
 @code{device} to a link name or link identifier will restrict the output
 to addresses of that device.
+@end deffn
+
+@node Route
+@section Route
+
+The @code{(ip route)} module introduces procedures to access and modify the
+network routes on your machine.  They are equivalent to the @command{ip route}
+family of commands, from @code{iproute2}.
+
+@deffn {Scheme Procedure} route-add @var{dest} [@var{#:ipv6?} #f] @
+    [@var{#:device} #f] [@var{#:table} RT_TABLE_MAIN] [@var{#:protocol} #f] @
+    [@var{#:scope} RT_SCOPE_LINK] [@var{#:type} RTN_UNICAST] @
+    [@var{#:priority} #f] [@var{#:src} #f] [@var{#:via} #f]
+Add the route described by the argmuents.  @var{dest} is the destination network,
+in cidr notation (@code{addr/prefix}) or the string @code{"default"}.
+
+@var{#:device} is the name or index of a network link. @var{#:table} is the
+index of a routing table, one of @code{RT_TABLE_COMPAT}, @code{RT_TABLE_DEFAULT},
+@code{RT_TABLE_MAIN} or @code{RT_TABLE_LOCAL}, as defined in
+@code{(netlink constant)}.
+
+If it is set, @var{#:protocol} must be the routing protocol, @code{RTPROT_*},
+as defined in @code{(netlink constant)}.
+
+@var{#:scope} must be the scope of the route, one of @code{RT_SCOPE_*}, as
+defined in @code{(netlink constant)}.
+
+@var{#:type} must be the type of route, one of @code{RTN_*}, as defined in
+@code{(netlink constant)}.
+
+If set, @var{#:priority} is a number specifying the priority of the rule
+when the kernel is looking for a matching rule.  This is also known as the
+metric of the route.
+
+If set, @var{#:src} is the source address in cidr notation, or as a single
+address.
+
+If set, @var{#:via} is the gateway address.  This is not in cidr notation, as
+the gateway is a single address, not a network.
+
+@example
+(route-add "default" #:device "enp1s0" #:via "192.0.2.1")
+(route-add "192.0.2.0/24" #:device "enp1s0" #:src "192.0.2.15")
+@end example
+
+If you wish to add an IPv6 route instead, set @code{#:ipv6} to @code{#t},
+as in the following example.
+
+@example
+(addr-add "2001:db8::/64" #:device "enp1s0" #:src "2001:db8::1a4c" #:ipv6? #t)
+@end example
+
+Note that using the wrong ip type with the wrong value for the @code{#:ipv6?}
+flag will result in a @code{Bad address} exception from inet-pton.
+@end deffn
+
+@deffn {Scheme Procedure} route-del @var{dest} [@var{#:ipv6?} #f] @
+    [@var{#:device} #f] [@var{#:table} RT_TABLE_MAIN] [@var{#:protocol} #f] @
+    [@var{#:scope} #f] [@var{#:type} #f] [@var{#:priority} #f] @
+    [@var{#:src} #f] [@var{#:via} #f]
+Delete the route given in arguments.  The arguments follow the same structure
+as @code{route-add}.  By specifying more arguments, you can narrow down the
+search for the rule to delete further.  Each call will only remove one route,
+so being more precise ensures you target the rule you wish to delete.  It
+is not clear which route is deleted if multiple routes match your query.
+@end deffn
+
+@deffn {Scheme Procedure} route-show [@var{#:table} RT_TABLE_MAIN] @
+    [@var{#:family} AF_UNSPEC]
+Print the list of routes on standard output.  Note that, contrary to
+@command{ip route show}, we show both IPv4 and IPv6 routes.  To narrow down the
+number of routes displayed, you can specify the family as in this example.
+
+@example
+(route-show #:family AF_INET6)
+@end example
 @end deffn
 
 @bye
