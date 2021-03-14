@@ -186,15 +186,17 @@
        (format #t " brd ~a" brd))
      (when scope
        (format #t " scope ~a"
-               (match scope
-                 (RT_SCOPE_UNIVERSE "global")
-                 (_ (substring (symbol->string (int->rtm-scope scope)) 8)))))
+               (cond
+                 ((equal? scope RT_SCOPE_UNIVERSE) "global")
+                 (else (string-downcase
+                         (substring (symbol->string (int->rtm-scope scope))
+                                    9))))))
 
      (for-each
        (lambda (flag)
          (unless (equal? flag 'IFA_F_PERMANENT)
            (format #t " ~a"
-                   (substring (symbol->string flag) 6))))
+                   (string-downcase (substring (symbol->string flag) 6)))))
        flags)
 
      (when label
