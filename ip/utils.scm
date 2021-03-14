@@ -24,7 +24,9 @@
   #:use-module (netlink standard)
   #:export (answer-ok?
             get-attr
-            split-flags))
+            split-flags
+            cidr->addr
+            cidr->prefix))
 
 (define (answer-ok? answer)
   (cond
@@ -59,3 +61,15 @@
       (else
         (loop (/ max-flag 2) (- flags max-flag)
               (cons max-flag result))))))
+
+(define (cidr->addr str)
+  (match (string-split str #\/)
+    ((addr) addr)
+    ((addr prefix) addr)
+    (_ (throw 'incorrect-cidr-notation str))))
+
+(define (cidr->prefix str)
+  (match (string-split str #\/)
+    ((addr) #f)
+    ((addr prefix) (string->number prefix))
+    (_ (throw 'incorrect-cidr-notation str))))

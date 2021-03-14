@@ -45,18 +45,6 @@
   (brd       addr-brd)
   (cacheinfo addr-cacheinfo))
 
-(define (cidr->addr str)
-  (match (string-split str #\/)
-    ((addr) addr)
-    ((addr prefix) addr)
-    (_ (throw 'incorrect-cidr-notation str))))
-
-(define (cidr->prefix str)
-  (match (string-split str #\/)
-    ((addr) #f)
-    ((addr prefix) (string->number prefix))
-    (_ (throw 'incorrect-cidr-notation str))))
-
 (define* (addr-del device cidr #:key (ipv6? #f))
   (define request-num (random 65535))
   (define prefix (cidr->prefix cidr))
