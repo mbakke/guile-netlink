@@ -176,9 +176,12 @@
 (define print-addr
   (match-lambda
     (($ <addr> family prefix flags scope link label addr brd cacheinfo)
-     (format #t "    ~a ~a"
-             (match family (AF_INET "inet") (AF_INET6 "inet6"))
-             addr)
+     (format #t "    ~a ~a/~a"
+             (cond
+               ((= family AF_INET) "inet")
+               ((= family AF_INET6) "inet6")
+               (else "????"))
+             addr prefix)
      (when brd
        (format #t " brd ~a" brd))
      (when scope
