@@ -19,6 +19,7 @@
   ((guix licenses) #:prefix license:)
   (guix build-system gnu)
   (guix download)
+  (guix gexp)
   (guix git-download)
   (guix packages)
   (guix utils)
@@ -29,19 +30,15 @@
   (gnu packages texinfo)
   (gnu packages tls))
 
+(define %srcdir
+  (dirname (current-filename)))
+
 (package
   (name "guile-netlink")
   (version "0.1")
-  (source
-    (origin
-      (method git-fetch)
-      (uri (git-reference
-             (url "https://framagit.org/tyreunom/guile-netlink")
-             (commit version)))
-      (file-name (git-file-name name version))
-      (sha256
-       (base32
-        "0zfn3nwlz6xzip1j8xbj768dc299r037cfc81bk6kwl9xhzkjbrg"))))
+  (source (local-file "." "guile-netlink-checkout"
+                      #:recursive? #t
+                      #:select? (git-predicate %srcdir)))
   (build-system gnu-build-system)
   (arguments
    `(#:tests? #f)); no tests
@@ -52,7 +49,12 @@
      ("autoconf" ,autoconf)
      ("pkg-config" ,pkg-config)
      ("texinfo" ,texinfo)))
-  (home-page "https://framagit.org/tyreunom/guile-netlink")
-  (synopsis "")
-  (description "")
+  (home-page "https://git.lepiller.eu/guile-netlink")
+  (synopsis "Netlink protocol implementation for Guile")
+  (description "Guile Netlink is a GNU Guile library providing an implementation
+of the netlink protocol.
+
+It provides a generic library for writing implementations of a netlink
+protocol, a low-level rtnetlink implementation that uses that library and a
+high-level API for network management that uses rtnetlink.")
   (license license:gpl3+))
