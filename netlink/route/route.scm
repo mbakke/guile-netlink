@@ -38,7 +38,7 @@
 
 (define-data-type route-message
   (lambda (msg)
-    (+ 12 (route-attr-list-size (addr-message-type-attrs msg))))
+    (+ 12 (route-attr-list-size (route-message-type-attrs msg))))
   (lambda (msg pos bv)
     (match msg
       (($ route-message-type family dest-len src-len tos table protocol
@@ -53,16 +53,16 @@
        (bytevector-u8-set! bv (+ pos 7) type)
        (bytevector-u32-set! bv (+ pos 8) flags (native-endianness))
        (serialize-route-attr-list attrs (+ pos 12) bv))))
-  (family addr-message-family addr-message-type-family)
-  (dest-len addr-message-dest-len addr-message-type-dest-len)
-  (src-len addr-message-src-len addr-message-type-src-len)
-  (tos addr-message-tos addr-message-type-tos)
-  (table addr-message-table addr-message-type-table)
-  (protocol addr-message-protocol addr-message-type-protocol)
-  (scope addr-message-scope addr-message-type-scope)
-  (type addr-message-kind addr-message-type-type)
-  (flags addr-message-flags addr-message-type-flags)
-  (attrs addr-message-attrs addr-message-type-attrs))
+  (family route-message-family route-message-type-family)
+  (dest-len route-message-dest-len route-message-type-dest-len)
+  (src-len route-message-src-len route-message-type-src-len)
+  (tos route-message-tos route-message-type-tos)
+  (table route-message-table route-message-type-table)
+  (protocol route-message-protocol route-message-type-protocol)
+  (scope route-message-scope route-message-type-scope)
+  (type route-message-kind route-message-type-type)
+  (flags route-message-flags route-message-type-flags)
+  (attrs route-message-attrs route-message-type-attrs))
 
 (define (deserialize-route-message decoder bv pos)
   (let ((family (bytevector-u8-ref bv pos)))
