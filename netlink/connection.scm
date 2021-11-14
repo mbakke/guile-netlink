@@ -18,10 +18,13 @@
 (define-module (netlink connection)
   #:use-module (netlink constant)
   #:use-module (netlink data)
+  #:use-module (netlink error)
   #:use-module (netlink message)
   #:use-module (rnrs bytevectors)
   #:use-module (system foreign)
   #:use-module (srfi srfi-9)
+  #:use-module (srfi srfi-34)
+  #:use-module (srfi srfi-35)
   #:export (connect
             connect-route
             close-socket
@@ -96,7 +99,8 @@
 
 (define* (send-msg msg sock #:key (addr (get-addr AF_NETLINK 0 0)))
   (unless (message? msg)
-    (throw 'cannot-send-not-message-type))
+    (raise (condition (&netlink-message-type-error
+                        (message msg)))))
 
   (let* ((len (data-size msg))
          (bv (make-bytevector len)))
@@ -114,7 +118,7 @@
          (size (ffi-recvmsg (socket-num sock) msghdr 0))
          (answer (make-bytevector size)))
     (when (> size (* 1024 32))
-      (throw 'answer-too-big))
+      (raise (condition (&netlink-answer-too-big-error (size size)))))
     (when (> size 0)
       (bytevector-copy! bv 0 answer 0 size))
     answer))

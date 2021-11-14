@@ -23,11 +23,14 @@
   #:use-module (netlink connection)
   #:use-module (netlink constant)
   #:use-module (netlink data)
+  #:use-module (netlink error)
   #:use-module (netlink deserialize)
   #:use-module (netlink message)
   #:use-module (netlink standard)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-9)
+  #:use-module (srfi srfi-34)
+  #:use-module (srfi srfi-35)
   #:export (link-add
             link-del
             link-set

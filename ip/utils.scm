@@ -19,9 +19,12 @@
   #:use-module (ice-9 match)
   #:use-module (netlink constant)
   #:use-module (netlink data)
+  #:use-module (netlink error)
   #:use-module (netlink message)
   #:use-module (netlink route attrs)
   #:use-module (netlink standard)
+  #:use-module (srfi srfi-34)
+  #:use-module (srfi srfi-35)
   #:export (answer-ok?
             get-attr
             split-flags
@@ -38,10 +41,8 @@
            (let ((err (error-message-err data)))
              (if (equal? err 0)
                  #t
-                 (begin
-                   (format #t "RTNETLINK answers: ~a~%" (strerror (- err)))
-                   #f)))
-           #f)))))
+                 (raise (condition (&netlink-response-error (errno (- err)))))))
+           (raise (condition (&netlink-response-error (errno 0)))))))))
 
 (define (get-attr attrs type)
   (let ((attrs (filter (lambda (attr) (equal? (route-attr-kind attr) type)) attrs)))
@@ -66,10 +67,10 @@
   (match (string-split str #\/)
     ((addr) addr)
     ((addr prefix) addr)
-    (_ (throw 'incorrect-cidr-notation str))))
+    (_ (raise (condition (&netlink-cidr-error (str str)))))))
 
 (define (cidr->prefix str)
   (match (string-split str #\/)
     ((addr) #f)
     ((addr prefix) (string->number prefix))
-    (_ (throw 'incorrect-cidr-notation str))))
+    (_ (raise (condition (&netlink-cidr-error (str str)))))))

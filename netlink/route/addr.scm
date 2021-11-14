@@ -18,6 +18,7 @@
 (define-module (netlink route addr)
   #:use-module (ice-9 match)
   #:use-module (netlink data)
+  #:use-module (netlink error)
   #:use-module (netlink route)
   #:use-module (netlink route attrs)
   #:use-module (srfi srfi-9)
@@ -63,5 +64,5 @@
         (cond
           ((equal? family AF_INET) 'ipv4-addr-attr)
           ((equal? family AF_INET6) 'ipv6-addr-attr)
-          (else (throw 'unknown-family family)))
+          (else (raise (condition (&netlink-family-error (family family))))))
         decoder bv (+ pos 8)))))

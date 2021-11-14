@@ -4,6 +4,7 @@ SOURCES= \
   netlink/connection.scm \
   netlink/constant.scm \
   netlink/data.scm \
+  netlink/error.scm \
   netlink/message.scm \
   netlink/standard.scm \
   netlink/deserialize.scm \

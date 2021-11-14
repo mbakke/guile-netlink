@@ -17,7 +17,10 @@
 
 (define-module (netlink data)
   #:use-module (ice-9 match)
+  #:use-module (netlink error)
   #:use-module (srfi srfi-9)
+  #:use-module (srfi srfi-34)
+  #:use-module (srfi srfi-35)
   #:export (make-nl-data
             nl-data-data nl-data-size-proc nl-data-serialize-proc
             data-size ensure-data-size
@@ -49,12 +52,14 @@
     ((_ . type-alist)
      (or (assoc-ref type-alist target-type)
          (assoc-ref type-alist 'default)))
-    (#f (throw 'no-decoder current-type))))
+    (#f (raise (condition (&netlink-decoder-error
+                            (type current-type)))))))
   
 (define (get-current-deserialize decoder current-type)
   (match (assoc-ref decoder current-type)
     ((current-deserialize . _) current-deserialize)
-    (#f (throw 'no-decoder current-type))))
+    (#f (raise (condition (&netlink-decoder-error
+                            (type current-type)))))))
 
 (define (deserialize type decoder bv pos)
   (let ((deserialize (get-current-deserialize decoder type)))

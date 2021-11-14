@@ -18,9 +18,12 @@
 (define-module (netlink route route)
   #:use-module (ice-9 match)
   #:use-module (netlink data)
+  #:use-module (netlink error)
   #:use-module (netlink route)
   #:use-module (netlink route attrs)
   #:use-module (srfi srfi-9)
+  #:use-module (srfi srfi-34)
+  #:use-module (srfi srfi-35)
   #:use-module (rnrs bytevectors)
   #:export (make-route-message
             route-message?
@@ -80,5 +83,5 @@
         (cond
           ((equal? family AF_INET) 'ipv4-route-attr)
           ((equal? family AF_INET6) 'ipv6-route-attr)
-          (else (throw 'unknown-family family)))
+          (else (raise (condition (&netlink-family-error (family family))))))
         decoder bv (+ pos 12)))))
