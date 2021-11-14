@@ -111,7 +111,7 @@
 
 (define* (route-add dest
                     #:key (ipv6? #f) (device #f) (table RT_TABLE_MAIN)
-                          (protocol #f) (scope RT_SCOPE_LINK)
+                          (protocol RTPROT_BOOT) (scope RT_SCOPE_UNIVERSE)
                           (type RTN_UNICAST) (priority #f) (src #f) (via #f))
   (define request-num (random 65535))
 
