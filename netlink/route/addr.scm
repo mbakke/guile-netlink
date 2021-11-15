@@ -22,6 +22,8 @@
   #:use-module (netlink route)
   #:use-module (netlink route attrs)
   #:use-module (srfi srfi-9)
+  #:use-module (srfi srfi-34)
+  #:use-module (srfi srfi-35)
   #:use-module (rnrs bytevectors)
   #:export (make-addr-message
             addr-message?
