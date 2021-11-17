@@ -174,7 +174,7 @@
   (let loop ((num (inet-pton AF_INET6 addr)) (lst '()))
     (match lst
       ((_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _)
-       (u8-list->bytevector (reverse lst)))
+       (u8-list->bytevector lst))
       (_
        (loop (quotient num 256) (cons (modulo num 256) lst))))))
 (define (make-ipv6-route-attr addr)
