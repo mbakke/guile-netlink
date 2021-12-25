@@ -45,7 +45,11 @@
   (brd       addr-brd)
   (cacheinfo addr-cacheinfo))
 
-(define* (addr-del device cidr #:key (ipv6? #f) (peer (cidr->addr cidr)))
+(define* (addr-del device cidr #:key (ipv6? #f) (peer (cidr->addr cidr))
+                   (broadcast #f) (anycast #f)
+                   (label #f) (scope 'global) (metric #f)
+                   (home? #f) (mngtmpaddr? #f) (nodad? #f) (optimistic? #f)
+                   (noprefixroute? #f) (autojoin? #f))
   (define request-num (random 65535))
   (define prefix (cidr->prefix cidr))
   (define addr (cidr->addr cidr))
@@ -54,6 +58,18 @@
     (cond
       ((number? device) device)
       ((string? device) (link-name->index device))))
+
+  (define scope-num
+    (match scope
+      ((? number? scope) scope)
+      ('global RT_SCOPE_UNIVERSE)
+      ('host RT_SCOPE_HOST)
+      ('link RT_SCOPE_LINK)))
+
+  (define ifa-flags
+    (logior (if (and ipv6? mngtmpaddr?) IFA_F_MANAGETEMPADDR 0)
+            (if noprefixroute? IFA_F_NOPREFIXROUTE 0)
+            (if autojoin? IFA_F_MCAUTOJOIN 0)))
 
   (define message
     (make-message
@@ -64,8 +80,10 @@
       (make-addr-message
         (if ipv6? AF_INET6 AF_INET)
         (if prefix prefix 0)
-        0
-        0
+        (logior (if (and ipv6? home?) IFA_F_HOMEADDRESS 0)
+                (if (and ipv6? nodad?) IFA_F_NODAD 0)
+                (if (and ipv6? optimistic?) IFA_F_OPTIMISTIC 0))
+        scope-num
         index
         (list
           (make-route-attr IFA_LOCAL
@@ -85,7 +103,11 @@
       (close-socket sock)
       (answer-ok? (last answer)))))
 
-(define* (addr-add device cidr #:key (ipv6? #f) (peer (cidr->addr cidr)))
+(define* (addr-add device cidr #:key (ipv6? #f) (peer (cidr->addr cidr))
+                   (broadcast #f) (anycast #f)
+                   (label #f) (scope 'global) (metric #f)
+                   (home? #f) (mngtmpaddr? #f) (nodad? #f) (optimistic? #f)
+                   (noprefixroute? #f) (autojoin? #f))
   (define request-num (random 65535))
   (define prefix (cidr->prefix cidr))
   (define addr (cidr->addr cidr))
@@ -94,6 +116,18 @@
     (cond
       ((number? device) device)
       ((string? device) (link-name->index device))))
+
+  (define scope-num
+    (match scope
+      ((? number? scope) scope)
+      ('global RT_SCOPE_UNIVERSE)
+      ('host RT_SCOPE_HOST)
+      ('link RT_SCOPE_LINK)))
+
+  (define ifa-flags
+    (logior (if (and ipv6? mngtmpaddr?) IFA_F_MANAGETEMPADDR 0)
+            (if noprefixroute? IFA_F_NOPREFIXROUTE 0)
+            (if autojoin? IFA_F_MCAUTOJOIN 0)))
 
   (define message
     (make-message
@@ -104,20 +138,44 @@
       (make-addr-message
         (if ipv6? AF_INET6 AF_INET)
         (if prefix prefix 0)
-        0
-        0
+        (logior (if (and ipv6? home?) IFA_F_HOMEADDRESS 0)
+                (if (and ipv6? nodad?) IFA_F_NODAD 0)
+                (if (and ipv6? optimistic?) IFA_F_OPTIMISTIC 0))
+        scope-num
         index
-        (list
-          (make-route-attr IFA_LOCAL
+        `(,(make-route-attr IFA_LOCAL
             ((if ipv6?
                  make-ipv6-route-attr
                  make-ipv4-route-attr)
              addr))
-          (make-route-attr IFA_ADDRESS
+          ,(make-route-attr IFA_ADDRESS
             ((if ipv6?
                  make-ipv6-route-attr
                  make-ipv4-route-attr)
-             peer))))))
+             peer))
+          ,@(if broadcast
+                `((,(make-route-attr IFA_BROADCAST
+                      ((if ipv6?
+                           make-ipv6-route-attr
+                           make-ipv4-route-attr)
+                       broadcast))))
+                '())
+          ,@(if anycast
+                `((,(make-route-attr IFA_ANYCAST
+                      ((if ipv6?
+                           make-ipv6-route-attr
+                           make-ipv4-route-attr)
+                       anycast))))
+                '())
+          ,@(if (> ifa-flags 0)
+                `((,(make-route-attr IFA_FLAGS (make-u32-route-attr ifa-flags))))
+                '())
+          ,@(if label
+                `((,(make-route-attr IFA_LABEL (make-string-route-attr label))))
+                '())
+          ,@(if metric
+                `((,(make-route-attr IFA_RT_PRIORITY (make-u32-route-attr metric))))
+                '())))))
 
   (let ((sock (connect-route)))
     (send-msg message sock)

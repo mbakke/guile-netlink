@@ -292,6 +292,7 @@
     (,IFA_ANYCAST . ,address-decoder)
     (,IFA_FLAGS . ,deserialize-route-attr-data-u32)
     (,IFA_CACHEINFO . ,deserialize-route-attr-data-route-cache-info)
+    (,IFA_RT_PRIORITY . ,deserialize-route-attr-data-u32)
     (default . ,deserialize-route-attr-data-bv)))
 
 (define (default-route-route-attr-decoder address-decoder)

@@ -605,7 +605,12 @@ The @code{(ip addr)} module introduces procedures to access and modify the
 network addresses on your machine.  They are equivalent to the @command{ip addr}
 family of commands, from @code{iproute2}.
 
-@deffn {Scheme Procedure} addr-add @var{device} @var{cidr} [@var{#:ipv6?} #f]
+@deffn {Scheme Procedure} addr-add @var{device} @var{cidr} [@var{#:ipv6?} #f] @
+        [@var{#:peer} @code{(cidr->addr cidr)}] [@var{#:broadcast} #f] @
+        [@var{#:anycast} #f] [@var{#:label} #f] [@var{#:scope} @code{'global}] @
+        [@var{#:metric} #f] [@var{#:home?} #f] [@var{#:mngtmpaddr?} #f] @
+        [@var{#:nodad?} #f] [@var{optimistic?} #f] [@var{noprefixroute?} #f] @
+        [@var{#:autojoin?} #f]
 Add the address given in @var{cidr} to @var{device}. @var{device} can
 contain the name of the link, as a string, or its index, as a number.
 
@@ -625,9 +630,37 @@ as in the following example.
 
 Note that using the wrong ip type with the wrong value for the @code{#:ipv6?}
 flag will result in a @code{Bad address} exception from inet-pton.
+
+Additional flags are available; they follow the same semantics as Iproute2.
+For pointopoint interfaces, you can specify the address of the remote endpoint
+with @var{#:peer}. You can specify a broadcast or anycast address with
+@var{#:broadcast} and @var{#:anycast}. All three require an IP address passed
+as a string when specified.
+
+You can specify a label for the address with @var{#:label}. The parameter must
+be a string that is either the name of the device, or starts with the name of
+the device, followed by a colon and must contain at most 15 characters.
+
+You can specify a scope with @var{#:scope}, whose value is either @code{'global},
+@code{'link}, @code{'host} or a numeric value.
+
+You can specify the priority of the prefix route associated with this address
+using @code{#:metric}, a number.
+
+Finally, this procedures accepts address configuration flags, whose values are
+booleans.  They are unset by default.  Some flags only work for IPv6 addresses,
+those are @var{#:home?} to designate this address as the ``home address'',
+@var{#:mngtmpaddr?}, @var{#:nodad?} and @var{#:optimistic?}. The flags
+@var{#:noprefixroute?} and @var{#:autojoin?} can be set for IPv4 and IPv6
+addresses.
 @end deffn
 
-@deffn {Scheme Procedure} addr-del @var{device} @var{cidr} [@var{#:ipv6?} #f]
+@deffn {Scheme Procedure} addr-del @var{device} @var{cidr} [@var{#:ipv6?} #f] @
+        [@var{#:peer} @code{(cidr->addr cidr)}] [@var{#:broadcast} #f] @
+        [@var{#:anycast} #f] [@var{#:label} #f] [@var{#:scope} @code{'global}] @
+        [@var{#:metric} #f] [@var{#:home?} #f] [@var{#:mngtmpaddr?} #f] @
+        [@var{#:nodad?} #f] [@var{optimistic?} #f] [@var{noprefixroute?} #f] @
+        [@var{#:autojoin?} #f]
 Delete the address given in @var{cidr} from @var{device}. @var{device} can
 contain the name of the link, as a string, or its index, as a number.
 
@@ -647,6 +680,9 @@ as in the following example.
 
 Note that using the wrong ip type with the wrong value for the @code{#:ipv6?}
 flag will result in a @code{Bad address} exception from inet-pton.
+
+Additional flags are available, see the description in @code{addr-add} for more
+details.
 @end deffn
 
 @deffn {Scheme Procedure} addr-show [@var{device}]
