@@ -45,7 +45,7 @@
   (brd       addr-brd)
   (cacheinfo addr-cacheinfo))
 
-(define* (addr-del device cidr #:key (ipv6? #f))
+(define* (addr-del device cidr #:key (ipv6? #f) (peer (cidr->addr cidr)))
   (define request-num (random 65535))
   (define prefix (cidr->prefix cidr))
   (define addr (cidr->addr cidr))
@@ -77,7 +77,7 @@
             ((if ipv6?
                  make-ipv6-route-attr
                  make-ipv4-route-attr)
-             addr))))))
+             peer))))))
 
   (let ((sock (connect-route)))
     (send-msg message sock)
@@ -85,7 +85,7 @@
       (close-socket sock)
       (answer-ok? (last answer)))))
 
-(define* (addr-add device cidr #:key (ipv6? #f))
+(define* (addr-add device cidr #:key (ipv6? #f) (peer (cidr->addr cidr)))
   (define request-num (random 65535))
   (define prefix (cidr->prefix cidr))
   (define addr (cidr->addr cidr))
@@ -117,7 +117,7 @@
             ((if ipv6?
                  make-ipv6-route-attr
                  make-ipv4-route-attr)
-             addr))))))
+             peer))))))
 
   (let ((sock (connect-route)))
     (send-msg message sock)
