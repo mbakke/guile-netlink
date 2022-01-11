@@ -580,7 +580,14 @@ control the state of the link at creation. @var{type-args} is an association
 list containing additional values for the given type.
 
 When @var{type} is @code{"vlan"}, @var{type-args} can contain a number associated
-with @code{'id}: the VLAN id to be created.
+with @code{'id}: the VLAN id to be created and a link name associated with
+@code{"link"}: the name of the link on which the vlan is created.
+
+The following is an example in which we create a new vlan link:
+@example
+;; same as "ip l add link eth0 name eth0.7 type vlan id 7"
+(link-add "eth0.7" "vlan" #:type-args '((id . 7) (link . "eth0")))
+@end example
 
 When @var{type} is @code{"veth"}, @var{type-args} can contain a string associated
 with @code{'peer}: the name of the peer.

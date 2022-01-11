@@ -276,16 +276,19 @@ criteria."
         0
         0
         0
-        (list
-          (make-route-attr IFLA_IFNAME
+        `(,(make-route-attr IFLA_IFNAME
             (make-string-route-attr name))
-          (make-route-attr IFLA_LINKINFO
+          ,(make-route-attr IFLA_LINKINFO
             (make-nested-route-attr
               (list
                 (make-route-attr IFLA_INFO_KIND
                   (make-string-route-attr type))
                 (make-route-attr IFLA_INFO_DATA
-                  (make-nested-route-attr type-data)))))))))
+                  (make-nested-route-attr type-data)))))
+          ,@(if (assoc-ref type-args 'link)
+                `(,(make-route-attr IFLA_LINK
+                     (make-u32-route-attr (link-name->index (assoc-ref type-args 'link)))))
+                '())))))
   (let ((sock (connect-route)))
     (send-msg message sock)
     (let ((answer (receive-and-decode-msg sock %default-route-decoder)))
