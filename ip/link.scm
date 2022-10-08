@@ -211,8 +211,8 @@ criteria."
                 '())
           ,@(if name
                 (list
-                  (make-route-attr IFLA_TXQLEN
-                    (make-u32-route-attr txqueuelen)))
+                  (make-route-attr IFLA_IFNAME
+                    (make-string-route-attr name)))
                 '())
           ,@(if address
                 (list
