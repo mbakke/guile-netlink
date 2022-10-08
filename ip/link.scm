@@ -249,6 +249,71 @@ criteria."
       (close-socket sock)
       (answer-ok? (last answer)))))
 
+(define* (bond-type-args #:key (mode #f) (miimon #f) (lacp-active #f) (lacp-rate #f)
+                         (primary #f) (primary-reselect #f))
+  `(,@(if mode
+          (list
+           (make-route-attr IFLA_BOND_MODE
+             (match mode
+               ("balance-rr" (make-u8-route-attr BOND_MODE_ROUNDROBIN))
+               ("active-backup" (make-u8-route-attr BOND_MODE_ACTIVEBACKUP))
+               ("balance-xor" (make-u8-route-attr BOND_MODE_XOR))
+               ("broadcast" (make-u8-route-attr BOND_MODE_BROADCAST))
+               ("802.3ad" (make-u8-route-attr BOND_MODE_8023AD))
+               ("balance-tlb" (make-u8-route-attr BOND_MODE_TLB))
+               ("balance-alb" (make-u8-route-attr BOND_MODE_ALB))
+               (_ (raise (condition
+                          (&message
+                           (message "Bond field `mode' can be defined as \
+balance-rr|active-backup|balance-xor|broadcast|802.3ad|balance-tlb|balance-alb" ))))))))
+          '())
+    ,@(if miimon
+          (list
+           (make-route-attr IFLA_BOND_MIIMON
+             (make-u32-route-attr miimon)))
+          '())
+    ,@(if primary
+          (list
+           (make-route-attr IFLA_BOND_PRIMARY
+             (make-u32-route-attr (link-name->index primary))))
+          '())
+    ,@(if primary-reselect
+          (list
+           (make-route-attr IFLA_BOND_PRIMARY_RESELECT
+             (match primary-reselect
+               ("always" (make-u8-route-attr BOND_PRIMARY_RESELECT_ALWAYS))
+               ("better" (make-u8-route-attr BOND_PRIMARY_RESELECT_BETTER))
+               ("failure" (make-u8-route-attr BOND_PRIMARY_RESELECT_FAILURE))
+               (_ (raise (condition
+                          (&message
+                           (message "Bond field `primary-reselect' can be defined as always|better|failure" ))))))))
+          '())
+    ,@(if lacp-active
+          (list
+           (make-route-attr IFLA_BOND_AD_LACP_ACTIVE
+             (match lacp-active
+               ("on" (make-u8-route-attr BOND_AD_LACP_ACTIVE_ON))
+               ("off" (make-u8-route-attr BOND_AD_LACP_ACTIVE_OFF))
+               (_ (raise (condition
+                          (&message
+                           (message "Bond field `lacp-active' can be defined as off|on" ))))))))
+          '())
+    ,@(if lacp-rate
+          (list
+           (make-route-attr IFLA_BOND_AD_LACP_RATE
+             (match lacp-rate
+               ("slow" (make-u8-route-attr 0))
+               ("fast" (make-u8-route-attr 1))
+               (_ (raise (condition
+                          (&message
+                           (message "Bond field `lacp-rate' can be defined as slow|fast"))))))))
+          '())))
+
+(define (alist->keyword+value alist)
+  (fold (match-lambda*
+          (((k . v) r)
+           (cons* (symbol->keyword k) v r))) '() alist))
+
 (define* (link-add name type #:key (type-args '()))
   (define request-num (random 65535))
   (define type-data
@@ -268,6 +333,7 @@ criteria."
                              (make-string-route-attr
                                (assoc-ref type-args 'peer)))))))
                '())))
+      ("bond" (apply bond-type-args (alist->keyword+value type-args)))
       ;; TODO: unsupported for now
       (_ '())))
   (define message
