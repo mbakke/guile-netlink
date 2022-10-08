@@ -164,7 +164,8 @@ criteria."
                    (trailers-on #f) (trailers-off #f)
                    (carrier-on #f) (carrier-off #f)
                    (txqueuelen #f) (name #f) (address #f)
-                   (broadcast #f) (mtu #f) (netns #f))
+                   (broadcast #f) (mtu #f) (netns #f)
+                   (master #f))
   (define request-num (random 65535))
   (define id (if (number? device) device (link-name->index device)))
   (define netnsfd (cond
@@ -228,6 +229,11 @@ criteria."
                 (list
                   (make-route-attr IFLA_MTU
                     (make-u32-route-attr mtu)))
+                '())
+          ,@(if master
+                (list
+                  (make-route-attr IFLA_MASTER
+                    (make-u32-route-attr (link-name->index master))))
                 '())
           ,@(if netns
                 (list
