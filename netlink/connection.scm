@@ -1,7 +1,8 @@
 ;;;; This file is part of Guile Netlink
 ;;;;
 ;;;; Copyright (C) 2021 Julien Lepiller <julien@lepiller.eu>
-;;;; 
+;;;; Copyright (C) 2023 Ludovic Courtès <ludo@gnu.org>
+;;;;
 ;;;; This library is free software: you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
 ;;;; the Free Software Foundation, either version 3 of the License, or
@@ -24,6 +25,7 @@
   #:use-module (system foreign)
   #:use-module (srfi srfi-34)
   #:use-module (srfi srfi-35)
+  #:use-module (srfi srfi-71)
   #:export (connect
             connect-route
             close-socket
@@ -34,16 +36,27 @@
 
 (define libc (dynamic-link))
 
-(define ffi-sendto (pointer->procedure int
-                                       (dynamic-func "sendto" libc)
-                                       (list int '* size_t int '* int)
-                                       #:return-errno? #t))
-(define ffi-recvmsg (pointer->procedure int
-                                        (dynamic-func "recvmsg" libc)
-                                        (list int '* int)))
-(define ffi-bind (pointer->procedure int
-                                     (dynamic-func "bind" libc)
-                                     (list int '* int)))
+(define (syscall->procedure return-type function
+                            argument-types)
+  "Return a procedure that calls FUNCTION, a syscall wrapper from the C library
+with the given RETURN-TYPE and ARGUMENT-TYPES."
+  (let ((proc (pointer->procedure return-type
+                                  (dynamic-func function libc)
+                                  argument-types
+                                  #:return-errno? #t)))
+    (lambda args
+      (let ((ret errno (apply proc args)))
+        (when (< ret 0)
+          (throw 'system-error function "~A"
+                 (list (strerror errno)) (list errno)))
+        ret))))
+
+(define ffi-sendto
+  (syscall->procedure int "sendto" (list int '* size_t int '* int)))
+(define ffi-recvmsg
+  (syscall->procedure int "recvmsg" (list int '* int)))
+(define ffi-bind
+  (syscall->procedure int "bind" (list int '* int)))
 
 ;; define simple functions to open/close sockets
 (define (open-socket proto)
