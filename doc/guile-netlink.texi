@@ -256,10 +256,6 @@ rtnetlink protocol, binds it to the kernel and returns it.  By passing the
 optional @var{groups} keyword, you can select broadcast groups to subscribe to.
 @end deffn
 
-@deffn {Scheme Procedure} close-socket @var{socket}
-Closes a netlink socket.  The socket cannot be used afterwards.
-@end deffn
-
 @deffn {Scheme Procedure} send-msg @var{msg} @var{sock} [#:@var{addr}]
 Send @var{msg} (it must be of type message, @xref{Netlink Headers}) to
 @var{addr} using @var{sock}.  If not passed, @var{addr} is the address of

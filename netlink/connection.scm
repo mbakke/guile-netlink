@@ -22,7 +22,6 @@
   #:use-module (netlink message)
   #:use-module (rnrs bytevectors)
   #:use-module (system foreign)
-  #:use-module (srfi srfi-9)
   #:use-module (srfi srfi-34)
   #:use-module (srfi srfi-35)
   #:export (connect
@@ -34,12 +33,7 @@
             get-addr))
 
 (define libc (dynamic-link))
-(define ffi-socket (pointer->procedure int
-                                       (dynamic-func "socket" libc)
-                                       (list int int int)))
-(define ffi-close (pointer->procedure void
-                                      (dynamic-func "close" libc)
-                                      (list int)))
+
 (define ffi-sendto (pointer->procedure int
                                        (dynamic-func "sendto" libc)
                                        (list int '* size_t int '* int)
@@ -51,22 +45,19 @@
                                      (dynamic-func "bind" libc)
                                      (list int '* int)))
 
-;; define socket type
-(define-record-type socket
-    (make-socket num open?)
-    socket?
-    (num socket-num)
-    (open? socket-open?))
-
 ;; define simple functions to open/close sockets
 (define (open-socket proto)
-    (make-socket (ffi-socket AF_NETLINK (logior SOCK_RAW SOCK_CLOEXEC) proto) #t))
-(define (close-socket socket)
-    (if (socket-open? socket)
-        (ffi-close (socket-num socket)))
-    (make-socket (socket-num socket) #f))
+  (socket AF_NETLINK (logior SOCK_RAW SOCK_CLOEXEC) proto))
+
+(define (close-socket sock)
+  (issue-deprecation-warning
+   "'close-socket' is deprecated; use 'close-port' instead.")
+  (close-port sock))
 
 (define (get-addr family pid groups)
+  "This is a variant of 'make-socket-address' for AF_NETLINK sockets.  The
+main difference is that it returns a raw bytevector that libguile procedures
+such as 'bind' cannot handle."
   (let ((addr (make-bytevector 12)))
     (bytevector-u16-set! addr 0 family (native-endianness))
     (bytevector-u32-set! addr 4 pid (native-endianness))
@@ -85,7 +76,7 @@
 
 (define* (connect proto addr)
   (let ((sock (open-socket proto)))
-    (ffi-bind (socket-num sock)
+    (ffi-bind (fileno sock)
               (bytevector->pointer addr)
               12)
     sock))
@@ -101,7 +92,7 @@
   (let* ((len (data-size msg))
          (bv (make-bytevector len)))
     (serialize msg 0 bv)
-    (ffi-sendto (socket-num sock) (bytevector->pointer bv) len 0 %null-pointer 0)))
+    (ffi-sendto (fileno sock) (bytevector->pointer bv) len 0 %null-pointer 0)))
 
 (define* (receive-msg sock #:key (addr (get-addr AF_NETLINK 0 0)))
   (let* ((len (* 1024 32))
@@ -111,7 +102,7 @@
                              iovec 1
                              %null-pointer 0
                              0))
-         (size (ffi-recvmsg (socket-num sock) msghdr 0))
+         (size (ffi-recvmsg (fileno sock) msghdr 0))
          (answer (make-bytevector size)))
     (when (> size (* 1024 32))
       (raise (condition (&netlink-answer-too-big-error (size size)))))

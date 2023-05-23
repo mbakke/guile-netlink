@@ -94,7 +94,7 @@
                    (get-attr attrs IFLA_ADDRESS)
                    (get-attr attrs IFLA_BROADCAST))))
                links)))
-      (close-socket sock)
+      (close-port sock)
       links)))
 
 (define print-link
@@ -246,7 +246,7 @@ criteria."
     (let ((answer (receive-and-decode-msg sock %default-route-decoder)))
       (when netnsfd
         (close netnsfd))
-      (close-socket sock)
+      (close-port sock)
       (answer-ok? (last answer)))))
 
 (define* (bond-type-args #:key (mode #f) (miimon #f) (lacp-active #f) (lacp-rate #f)
@@ -364,7 +364,7 @@ balance-rr|active-backup|balance-xor|broadcast|802.3ad|balance-tlb|balance-alb" 
   (let ((sock (connect-route)))
     (send-msg message sock)
     (let ((answer (receive-and-decode-msg sock %default-route-decoder)))
-      (close-socket sock)
+      (close-port sock)
       (answer-ok? (last answer)))))
 
 (define* (link-del device)
@@ -390,5 +390,5 @@ balance-rr|active-backup|balance-xor|broadcast|802.3ad|balance-tlb|balance-alb" 
   (let ((sock (connect-route)))
     (send-msg message sock)
     (let ((answer (receive-and-decode-msg sock %default-route-decoder)))
-      (close-socket sock)
+      (close-port sock)
       (answer-ok? (last answer)))))

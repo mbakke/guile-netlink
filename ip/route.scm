@@ -106,7 +106,7 @@
   (let ((sock (connect-route)))
     (send-msg message sock)
     (let ((answer (receive-and-decode-msg sock %default-route-decoder)))
-      (close-socket sock)
+      (close-port sock)
       (answer-ok? (last answer)))))
 
 (define* (route-add dest
@@ -170,7 +170,7 @@
   (let ((sock (connect-route)))
     (send-msg message sock)
     (let ((answer (receive-and-decode-msg sock %default-route-decoder)))
-      (close-socket sock)
+      (close-port sock)
       (answer-ok? (last answer)))))
 
 (define (link-ref links id)
@@ -221,7 +221,7 @@
                            (get-attr attrs RTA_PRIORITY)
                            (link-ref links (get-attr attrs RTA_OIF)))))
                      routes)))
-      (close-socket sock)
+      (close-port sock)
       routes)))
 
 (define print-route

@@ -100,7 +100,7 @@
   (let ((sock (connect-route)))
     (send-msg message sock)
     (let ((answer (receive-and-decode-msg sock %default-route-decoder)))
-      (close-socket sock)
+      (close-port sock)
       (answer-ok? (last answer)))))
 
 (define* (addr-add device cidr #:key (ipv6? #f) (peer (cidr->addr cidr))
@@ -180,7 +180,7 @@
   (let ((sock (connect-route)))
     (send-msg message sock)
     (let ((answer (receive-and-decode-msg sock %default-route-decoder)))
-      (close-socket sock)
+      (close-port sock)
       (answer-ok? (last answer)))))
 
 (define (get-addrs)
@@ -216,7 +216,7 @@
                           (get-attr attrs IFA_BROADCAST)
                           (get-attr attrs IFA_CACHEINFO))))
                     addrs)))
-      (close-socket sock)
+      (close-port sock)
       addrs)))
 
 (define print-addr
