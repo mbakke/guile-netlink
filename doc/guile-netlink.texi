@@ -240,7 +240,8 @@ to communicate or 0 for the kernel. @var{groups} is an integer representing
 the set of broadcast groups to which the connection subscribes.
 @end deffn
 
-@deffn {Scheme Procedure} connect @var{proto} @var{addr}
+@cindex non-blocking socket
+@deffn {Scheme Procedure} connect @var{proto} @var{addr} [#:flags 0]
 Creates a netlink socket for @var{proto} and binds it to @var{addr}.
 
 @var{proto} is the integer representing the protocol.  For instance, rtnetlink
@@ -248,12 +249,18 @@ can be selected by usin @code{NETLINK_ROUTE} (defined in
 @code{(netlink constant)}).
 
 @var{addr} is a bytevector, as returned by @code{get-addr}.
+
+@var{flags} is a set of additional flags to pass as the second argument
+to the @code{socket} system call---e.g., @code{SOCK_NONBLOCK}.
 @end deffn
 
-@deffn {Scheme Procedure} connect-route [#:groups @code{0}]
+@deffn {Scheme Procedure} connect-route [#:groups 0] [#:flags 0]
 This procedure is a wrapper for @code{connect} that creates a socket for the
 rtnetlink protocol, binds it to the kernel and returns it.  By passing the
 optional @var{groups} keyword, you can select broadcast groups to subscribe to.
+
+@var{flags} is a set of additional flags to pass as the second argument
+to the @code{socket} system call---e.g., @code{SOCK_NONBLOCK}.
 @end deffn
 
 @deffn {Scheme Procedure} send-msg @var{msg} @var{sock} [#:@var{addr}]

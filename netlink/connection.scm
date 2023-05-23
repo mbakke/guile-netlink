@@ -74,8 +74,8 @@ first argument is a port, call it upon EAGAIN or EWOULDBLOCK."
                       #:waiter (lambda () (current-read-waiter))))
 
 ;; define simple functions to open/close sockets
-(define (open-socket proto)
-  (socket AF_NETLINK (logior SOCK_RAW SOCK_CLOEXEC) proto))
+(define (open-socket proto flags)
+  (socket AF_NETLINK (logior SOCK_RAW SOCK_CLOEXEC flags) proto))
 
 (define (close-socket sock)
   (issue-deprecation-warning
@@ -102,15 +102,16 @@ such as 'bind' cannot handle."
     (list '* size_t)
     (list content size)))
 
-(define* (connect proto addr)
-  (let ((sock (open-socket proto)))
+(define* (connect proto addr #:key (flags 0))
+  (let ((sock (open-socket proto flags)))
     (ffi-bind sock
               (bytevector->pointer addr)
               12)
     sock))
 
-(define* (connect-route #:key (groups 0))
-  (connect NETLINK_ROUTE (get-addr AF_NETLINK 0 groups)))
+(define* (connect-route #:key (groups 0) (flags 0))
+  (connect NETLINK_ROUTE (get-addr AF_NETLINK 0 groups)
+           #:flags flags))
 
 (define* (send-msg msg sock #:key (addr (get-addr AF_NETLINK 0 0)))
   (unless (message? msg)
