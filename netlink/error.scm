@@ -23,6 +23,7 @@
             &netlink-decoder-error
             netlink-decoder-error?
             netlink-decoder-error-type
+            netlink-decoder-error-sub-type
 
             &netlink-family-error
             netlink-family-error?
@@ -57,7 +58,8 @@
 ;; No decoder for type
 (define-condition-type &netlink-decoder-error &netlink-error
   netlink-decoder-error?
-  (type netlink-decoder-error-type))
+  (type netlink-decoder-error-type)
+  (sub-type netlink-decoder-error-sub-type))
 
 ;; Unknown protocol family
 (define-condition-type &netlink-family-error &netlink-error

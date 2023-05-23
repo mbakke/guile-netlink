@@ -51,15 +51,20 @@
   (match (assoc-ref decoder current-type)
     ((_ . type-alist)
      (or (assoc-ref type-alist target-type)
-         (assoc-ref type-alist 'default)))
+         (assoc-ref type-alist 'default)
+         (raise (condition (&netlink-decoder-error
+                            (type current-type)
+                            (sub-type target-type))))))
     (#f (raise (condition (&netlink-decoder-error
-                            (type current-type)))))))
-  
+                           (type current-type)
+                           (sub-type target-type)))))))
+
 (define (get-current-deserialize decoder current-type)
   (match (assoc-ref decoder current-type)
     ((current-deserialize . _) current-deserialize)
     (#f (raise (condition (&netlink-decoder-error
-                            (type current-type)))))))
+                            (type current-type)
+                            (sub-type #f)))))))
 
 (define (deserialize type decoder bv pos)
   (let ((deserialize (get-current-deserialize decoder type)))
