@@ -567,6 +567,14 @@ Returns the list of existing links in the system, as a list of @code{<link>}
 objects.
 @end deffn
 
+@deffn {Scheme Procedure} wait-for-link @var{name} [#:blocking? #t]
+Wait until a link called @var{name} (a string such as @code{"ens3"}) shows
+up.
+
+When @var{blocking?} is false, use a non-blocking socket and cooperate via
+@code{current-read-waiter}---useful when using Fibers.
+@end deffn
+
 @deffn {Sceme Procedure} print-link @var{link}
 Display @var{link} on the standard output, using a format similar to
 @command{ip link} from @code{iproute2}.

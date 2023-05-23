@@ -1,7 +1,8 @@
 ;;;; This file is part of Guile Netlink
 ;;;;
 ;;;; Copyright (C) 2021 Julien Lepiller <julien@lepiller.eu>
-;;;; 
+;;;; Copyright (C) 2023 Ludovic Courtès <ludo@gnu.org>
+;;;;
 ;;;; This library is free software: you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
 ;;;; the Free Software Foundation, either version 3 of the License, or
@@ -31,12 +32,14 @@
   #:use-module (srfi srfi-9)
   #:use-module (srfi srfi-34)
   #:use-module (srfi srfi-35)
+  #:use-module (srfi srfi-71)
   #:export (link-add
             link-del
             link-set
             link-show
             link-name->index
             get-links
+            wait-for-link
             print-link
 
             <link> make-link link?
@@ -59,24 +62,35 @@
   (addr  link-addr)
   (brd   link-brd))
 
+(define (message->event+link msg)
+  "If MSG relates to a link event, return two values: its kind (e.g.,
+RTM_NEWLINK) and its associated <link> value.  Otherwise return #f and #f."
+  (if (memv (message-kind msg)
+            (list RTM_NEWLINK
+                  RTM_DELLINK
+                  RTM_SETLINK))
+      (values (message-kind msg)
+              (let* ((data (message-data msg))
+                     (attrs (link-message-attrs data)))
+                (make-link (get-attr attrs IFLA_IFNAME)
+                           (link-message-index data)
+                           (link-message-kind data)
+                           (map int->device-flags (split-flags (link-message-flags data)))
+                           (get-attr attrs IFLA_MTU)
+                           (get-attr attrs IFLA_QDISC)
+                           (get-attr attrs IFLA_OPERSTATE)
+                           (get-attr attrs IFLA_LINKMODE)
+                           (get-attr attrs IFLA_GROUP)
+                           (get-attr attrs IFLA_TXQLEN)
+                           (get-attr attrs IFLA_ADDRESS)
+                           (get-attr attrs IFLA_BROADCAST))))
+      (values #f #f)))
+
 (define (new-link-message->link msg)
   "If MSG has type 'RTM_NEWLINK', return the corresponding <link> object.
 Otherwise return #f."
-  (and (eqv? (message-kind msg) RTM_NEWLINK)
-       (let* ((data (message-data msg))
-              (attrs (link-message-attrs data)))
-         (make-link (get-attr attrs IFLA_IFNAME)
-                    (link-message-index data)
-                    (link-message-kind data)
-                    (map int->device-flags (split-flags (link-message-flags data)))
-                    (get-attr attrs IFLA_MTU)
-                    (get-attr attrs IFLA_QDISC)
-                    (get-attr attrs IFLA_OPERSTATE)
-                    (get-attr attrs IFLA_LINKMODE)
-                    (get-attr attrs IFLA_GROUP)
-                    (get-attr attrs IFLA_TXQLEN)
-                    (get-attr attrs IFLA_ADDRESS)
-                    (get-attr attrs IFLA_BROADCAST)))))
+  (let ((kind link (message->event+link msg)))
+    (and (eqv? kind RTM_NEWLINK) link)))
 
 (define (get-links)
   (define request-num (random 65535))
@@ -390,3 +404,59 @@ balance-rr|active-backup|balance-xor|broadcast|802.3ad|balance-tlb|balance-alb" 
     (let ((answer (receive-and-decode-msg sock %default-route-decoder)))
       (close-port sock)
       (answer-ok? (last answer)))))
+
+(define* (monitor-links proc init terminate?      ;TODO: Make public?
+                        #:key (blocking? #t))
+  "Wait for link events until @var{terminate?} returns true.  Call @var{init}
+with the initial list of links; use its result as the initial state.  From
+then on, call @code{(@var{proc} @var{event} @var{link} @var{state})} where
+@var{event} is a constant such as @code{RTM_NEWLINK} and @var{link} is the
+corresponding link.  Return the final state.
+
+When @code{blocking?} is false, use a non-blocking socket and cooperate via
+@code{current-read-waiter}---useful when using Fibers."
+  (define request-num (random 65536))
+  (define message
+    (make-message
+     RTM_GETLINK
+     (logior NLM_F_REQUEST NLM_F_DUMP)
+     request-num
+     0
+     (make-link-message AF_UNSPEC 0 0 0 0 '())))
+
+  (let ((sock (connect-route #:flags (if blocking? 0 SOCK_NONBLOCK))))
+    ;; Subscribe to the "link" group.
+    (add-socket-membership sock RTNLGRP_LINK)
+
+    (send-msg message sock)
+    (let* ((answer (receive-and-decode-msg sock %default-route-decoder))
+           (links (filter-map new-link-message->link answer)))
+      (let loop ((state (init links)))
+        (if (terminate? state)
+            (begin
+              (close-port sock)
+              state)
+            (loop (fold (lambda (msg state)
+                          (let ((event link (message->event+link msg)))
+                            (proc event link state)))
+                        state
+                        (receive-and-decode-msg sock %default-route-decoder))))))))
+
+
+(define* (wait-for-link name #:key (blocking? #t))
+  "Wait until a link called @var{name} (a string such as @code{\"ens3\"}) shows
+up.
+
+When @var{blocking?} is false, use a non-blocking socket and cooperate via
+@code{current-read-waiter}---useful when using Fibers."
+  (monitor-links (lambda (event link result)
+                   (and (= RTM_NEWLINK)
+                        (string=? (link-name link) name)
+                        link))
+                 (lambda (links)
+                   (find (lambda (link)
+                           (string=? (link-name link) name))
+                         links))
+                 (lambda (link)                   ;if LINK is true, terminate
+                   link)
+                 #:blocking? blocking?))
