@@ -263,6 +263,24 @@ optional @var{groups} keyword, you can select broadcast groups to subscribe to.
 to the @code{socket} system call---e.g., @code{SOCK_NONBLOCK}.
 @end deffn
 
+@cindex subscribing, to an rtnetlink group
+@deffn {Scheme Procedure} add-socket-membership @var{sock} @var{group}
+Make @var{sock} a member of @var{group}, an @code{RTNLGRP_} constant,
+meaning that it will be subscribed to events of that group.
+
+For example, here is how you could create a netlink socket and subscribe
+it to the ``link'' group so that it receives notifications for new and
+removed links:
+
+@lisp
+(let ((sock (connect-route)))
+  (add-socket-membership sock RTNLGRP_LINK)
+  @dots{})
+@end lisp
+
+This procedure is implemented as a @code{setsockopt} call.
+@end deffn
+
 @deffn {Scheme Procedure} send-msg @var{msg} @var{sock} [#:@var{addr}]
 Send @var{msg} (it must be of type message, @xref{Netlink Headers}) to
 @var{addr} using @var{sock}.  If not passed, @var{addr} is the address of

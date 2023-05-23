@@ -30,6 +30,7 @@
                                           current-write-waiter)
   #:export (connect
             connect-route
+            add-socket-membership
             close-socket
             send-msg
             receive-msg
@@ -73,9 +74,34 @@ first argument is a port, call it upon EAGAIN or EWOULDBLOCK."
   (syscall->procedure int "bind" (list int '* int)
                       #:waiter (lambda () (current-read-waiter))))
 
+(define socklen_t uint32)                         ;per <posix/bits/types.h>
+(define ffi-setsockopt
+  (syscall->procedure int "setsockopt" (list int int int '* socklen_t)))
+
+(define SOL_NETLINK 270)
+
+(define NETLINK_ADD_MEMBERSHIP 1)
+(define NETLINK_DROP_MEMBERSHIP 2)
+(define NETLINK_PKTINFO 3)
+(define NETLINK_BROADCAST_ERROR 4)
+(define NETLINK_NO_ENOBUFS 5)
+(define NETLINK_LISTEN_ALL_NSID 8)
+(define NETLINK_LIST_MEMBERSHIPS 9)
+(define NETLINK_CAP_ACK 10)
+(define NETLINK_EXT_ACK 11)
+(define NETLINK_GET_STRICT_CHK 12)
+
 ;; define simple functions to open/close sockets
 (define (open-socket proto flags)
   (socket AF_NETLINK (logior SOCK_RAW SOCK_CLOEXEC flags) proto))
+
+(define (add-socket-membership sock group)
+  "Make @var{sock} a member of @var{group}, an @code{RTNLGRP_} constant,
+meaning that it will be subscribed to events of that group."
+  (let ((bv (make-bytevector (sizeof int))))
+    (bytevector-uint-set! bv 0 group (native-endianness) (sizeof int))
+    (ffi-setsockopt sock SOL_NETLINK NETLINK_ADD_MEMBERSHIP
+                    (bytevector->pointer bv) (bytevector-length bv))))
 
 (define (close-socket sock)
   (issue-deprecation-warning
