@@ -34,6 +34,9 @@ implementation of the netlink protocol.
 * API Reference::          Description of the library interface.
 * IP Library::             High-level functions for network devices.
 
+* Concept Index::          Concepts.
+* Programming Index::      Data types, procedures, and variables.
+
 @detailmenu
 --- The Detailed Node Listing ---
 
@@ -794,5 +797,16 @@ number of routes displayed, you can specify the family as in this example.
 (route-show #:family AF_INET6)
 @end example
 @end deffn
+
+@c *********************************************************************
+@node Concept Index
+@unnumbered Concept Index
+@printindex cp
+
+@node Programming Index
+@unnumbered Programming Index
+@syncodeindex tp fn
+@syncodeindex vr fn
+@printindex fn
 
 @bye
