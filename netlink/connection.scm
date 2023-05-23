@@ -26,6 +26,8 @@
   #:use-module (srfi srfi-34)
   #:use-module (srfi srfi-35)
   #:use-module (srfi srfi-71)
+  #:autoload   (ice-9 suspendable-ports) (current-read-waiter
+                                          current-write-waiter)
   #:export (connect
             connect-route
             close-socket
@@ -36,27 +38,40 @@
 
 (define libc (dynamic-link))
 
-(define (syscall->procedure return-type function
-                            argument-types)
+(define* (syscall->procedure return-type function
+                             argument-types
+                             #:key waiter)
   "Return a procedure that calls FUNCTION, a syscall wrapper from the C library
-with the given RETURN-TYPE and ARGUMENT-TYPES."
+with the given RETURN-TYPE and ARGUMENT-TYPES.  When WAITER is true and the
+first argument is a port, call it upon EAGAIN or EWOULDBLOCK."
   (let ((proc (pointer->procedure return-type
                                   (dynamic-func function libc)
                                   argument-types
                                   #:return-errno? #t)))
-    (lambda args
-      (let ((ret errno (apply proc args)))
-        (when (< ret 0)
-          (throw 'system-error function "~A"
-                 (list (strerror errno)) (list errno)))
-        ret))))
+    (lambda (first . rest)
+      (let loop ()
+        (let ((ret errno (apply proc
+                                (if (port? first) (fileno first) first)
+                                rest)))
+          (if (< ret 0)
+              (if (and (memv errno (list EAGAIN EWOULDBLOCK))
+                       (port? first) waiter)
+                  (begin
+                    ((waiter) first)
+                    (loop))
+                  (throw 'system-error function "~A"
+                         (list (strerror errno)) (list errno)))
+              ret))))))
 
 (define ffi-sendto
-  (syscall->procedure int "sendto" (list int '* size_t int '* int)))
+  (syscall->procedure int "sendto" (list int '* size_t int '* int)
+                      #:waiter (lambda () (current-write-waiter))))
 (define ffi-recvmsg
-  (syscall->procedure int "recvmsg" (list int '* int)))
+  (syscall->procedure int "recvmsg" (list int '* int)
+                      #:waiter (lambda () (current-read-waiter))))
 (define ffi-bind
-  (syscall->procedure int "bind" (list int '* int)))
+  (syscall->procedure int "bind" (list int '* int)
+                      #:waiter (lambda () (current-read-waiter))))
 
 ;; define simple functions to open/close sockets
 (define (open-socket proto)
@@ -89,7 +104,7 @@ such as 'bind' cannot handle."
 
 (define* (connect proto addr)
   (let ((sock (open-socket proto)))
-    (ffi-bind (fileno sock)
+    (ffi-bind sock
               (bytevector->pointer addr)
               12)
     sock))
@@ -105,7 +120,7 @@ such as 'bind' cannot handle."
   (let* ((len (data-size msg))
          (bv (make-bytevector len)))
     (serialize msg 0 bv)
-    (ffi-sendto (fileno sock) (bytevector->pointer bv) len 0 %null-pointer 0)))
+    (ffi-sendto sock (bytevector->pointer bv) len 0 %null-pointer 0)))
 
 (define* (receive-msg sock #:key (addr (get-addr AF_NETLINK 0 0)))
   (let* ((len (* 1024 32))
@@ -115,7 +130,7 @@ such as 'bind' cannot handle."
                              iovec 1
                              %null-pointer 0
                              0))
-         (size (ffi-recvmsg (fileno sock) msghdr 0))
+         (size (ffi-recvmsg sock msghdr 0))
          (answer (make-bytevector size)))
     (when (> size (* 1024 32))
       (raise (condition (&netlink-answer-too-big-error (size size)))))
