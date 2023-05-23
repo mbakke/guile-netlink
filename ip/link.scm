@@ -59,6 +59,25 @@
   (addr  link-addr)
   (brd   link-brd))
 
+(define (new-link-message->link msg)
+  "If MSG has type 'RTM_NEWLINK', return the corresponding <link> object.
+Otherwise return #f."
+  (and (eqv? (message-kind msg) RTM_NEWLINK)
+       (let* ((data (message-data msg))
+              (attrs (link-message-attrs data)))
+         (make-link (get-attr attrs IFLA_IFNAME)
+                    (link-message-index data)
+                    (link-message-kind data)
+                    (map int->device-flags (split-flags (link-message-flags data)))
+                    (get-attr attrs IFLA_MTU)
+                    (get-attr attrs IFLA_QDISC)
+                    (get-attr attrs IFLA_OPERSTATE)
+                    (get-attr attrs IFLA_LINKMODE)
+                    (get-attr attrs IFLA_GROUP)
+                    (get-attr attrs IFLA_TXQLEN)
+                    (get-attr attrs IFLA_ADDRESS)
+                    (get-attr attrs IFLA_BROADCAST)))))
+
 (define (get-links)
   (define request-num (random 65535))
   (define message
@@ -72,28 +91,7 @@
   (let ((sock (connect-route)))
     (send-msg message sock)
     (let* ((answer (receive-and-decode-msg sock %default-route-decoder))
-           (links (filter
-                    (lambda (msg) (equal? (message-kind msg) RTM_NEWLINK))
-                    answer))
-           (links
-             (map
-               (lambda (msg)
-                 (let* ((data (message-data msg))
-                        (attrs (link-message-attrs data)))
-                 (make-link
-                   (get-attr attrs IFLA_IFNAME)
-                   (link-message-index data)
-                   (link-message-kind data)
-                   (map int->device-flags (split-flags (link-message-flags data)))
-                   (get-attr attrs IFLA_MTU)
-                   (get-attr attrs IFLA_QDISC)
-                   (get-attr attrs IFLA_OPERSTATE)
-                   (get-attr attrs IFLA_LINKMODE)
-                   (get-attr attrs IFLA_GROUP)
-                   (get-attr attrs IFLA_TXQLEN)
-                   (get-attr attrs IFLA_ADDRESS)
-                   (get-attr attrs IFLA_BROADCAST))))
-               links)))
+           (links (filter-map new-link-message->link answer)))
       (close-port sock)
       links)))
 
