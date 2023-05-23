@@ -40,10 +40,6 @@
 (define ffi-close (pointer->procedure void
                                       (dynamic-func "close" libc)
                                       (list int)))
-(define ffi-sendmsg (pointer->procedure int
-                                        (dynamic-func "sendmsg" libc)
-                                        (list int '* int)
-                                        #:return-errno? #t))
 (define ffi-sendto (pointer->procedure int
                                        (dynamic-func "sendto" libc)
                                        (list int '* size_t int '* int)
