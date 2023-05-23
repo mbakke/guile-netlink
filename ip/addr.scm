@@ -183,6 +183,24 @@
       (close-port sock)
       (answer-ok? (last answer)))))
 
+(define (new-address-message->address msg)
+  "If MSG has type 'RTM_NEWADDR', return the corresponding <addr> object.
+Otherwise return #f."
+  (and (eqv? (message-kind msg) RTM_NEWADDR)
+       (let* ((data (message-data msg))
+              (attrs (addr-message-attrs data)))
+         (make-addr (addr-message-family data)
+                    (addr-message-prefix-len data)
+                    (map int->ifa-flag
+                         (split-flags (logior (addr-message-flags data)
+                                              (get-attr attrs IFA_FLAGS))))
+                    (addr-message-scope data)
+                    (addr-message-index data)
+                    (get-attr attrs IFA_LABEL)
+                    (get-attr attrs IFA_ADDRESS)
+                    (get-attr attrs IFA_BROADCAST)
+                    (get-attr attrs IFA_CACHEINFO)))))
+
 (define (get-addrs)
   (define request-num (random 65535))
   (define message
@@ -195,27 +213,7 @@
   (let ((sock (connect-route)))
     (send-msg message sock)
     (let* ((answer (receive-and-decode-msg sock %default-route-decoder))
-           (addrs (filter
-                    (lambda (msg) (equal? (message-kind msg) RTM_NEWADDR))
-                    answer))
-           (addrs (map
-                    (lambda (msg)
-                      (let* ((data (message-data msg))
-                             (attrs (addr-message-attrs data)))
-                        (make-addr
-                          (addr-message-family data)
-                          (addr-message-prefix-len data)
-                          (map
-                            int->ifa-flag
-                            (split-flags (logior (addr-message-flags data)
-                                                 (get-attr attrs IFA_FLAGS))))
-                          (addr-message-scope data)
-                          (addr-message-index data)
-                          (get-attr attrs IFA_LABEL)
-                          (get-attr attrs IFA_ADDRESS)
-                          (get-attr attrs IFA_BROADCAST)
-                          (get-attr attrs IFA_CACHEINFO))))
-                    addrs)))
+           (addrs (filter-map new-address-message->address answer)))
       (close-port sock)
       addrs)))
 
