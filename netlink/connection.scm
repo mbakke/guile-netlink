@@ -29,6 +29,7 @@
   #:autoload   (ice-9 suspendable-ports) (current-read-waiter
                                           current-write-waiter)
   #:export (connect
+            connect-generic
             connect-route
             add-socket-membership
             close-socket
@@ -134,6 +135,10 @@ such as 'bind' cannot handle."
               (bytevector->pointer addr)
               12)
     sock))
+
+(define* (connect-generic #:key (groups 0) (flags 0))
+  (connect NETLINK_GENERIC (get-addr AF_NETLINK 0 groups)
+           #:flags flags))
 
 (define* (connect-route #:key (groups 0) (flags 0))
   (connect NETLINK_ROUTE (get-addr AF_NETLINK 0 groups)

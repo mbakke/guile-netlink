@@ -1,7 +1,8 @@
 ;;;; This file is part of Guile Netlink
 ;;;;
 ;;;; Copyright (C) 2020 Julien Lepiller <julien@lepiller.eu>
-;;;; 
+;;;; Copyright (C) 2023 Marius Bakke <marius@gnu.org>
+;;;;
 ;;;; This library is free software: you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
 ;;;; the Free Software Foundation, either version 3 of the License, or
@@ -17,6 +18,7 @@
 
 (define-module (netlink deserialize)
   #:use-module (netlink constant)
+  #:use-module (netlink generic)
   #:use-module ((netlink route addr) #:prefix route:)
   #:use-module ((netlink route attrs) #:prefix route:)
   #:use-module ((netlink route link) #:prefix route:)
@@ -24,7 +26,8 @@
   #:use-module (netlink standard)
   #:use-module (netlink message)
   #:export (%default-message-decoder
-            %default-route-decoder))
+            %default-route-decoder
+            %default-control-decoder))
 
 (define %default-message-decoder
   `((,NLMSG_NOOP . ,deserialize-no-data)
@@ -58,3 +61,17 @@
                      ,@route:%default-route-route-ipv6-attr-decoder)
     (linkinfo-attr ,(route:deserialize-route-attr 'linkinfo-attr)
                    ,@route:%default-route-link-info-attr-decoder)))
+
+(define %default-control-attr-decoder
+  `((,CTRL_ATTR_FAMILY_NAME . ,route:deserialize-route-attr-data-string)
+    (,CTRL_ATTR_FAMILY_ID . ,route:deserialize-route-attr-data-u16)
+    (,CTRL_ATTR_VERSION . ,route:deserialize-route-attr-data-u32)
+    (default . ,route:deserialize-route-attr-data-bv)))
+
+(define %default-control-decoder
+  `((message ,deserialize-message
+             ,@%default-message-decoder
+             (,NLMSG_MIN_TYPE . ,deserialize-generic-message))
+    (message-hdr ,deserialize-message-header '())
+    (nlattr ,(route:deserialize-route-attr 'nlattr)
+            ,@%default-control-attr-decoder)))
