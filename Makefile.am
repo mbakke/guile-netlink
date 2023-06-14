@@ -18,6 +18,11 @@ SOURCES= \
   ip/route.scm \
   ip/utils.scm \
   netlink/generic.scm \
-  netlink/generic/controller.scm
+  netlink/generic/controller.scm \
+  netlink/nl80211.scm \
+  netlink/nl80211/attrs.scm \
+  netlink/nl80211/information-elements.scm \
+  netlink/nl80211/scan.scm \
+  netlink/nl80211/station.scm
 
 info_TEXINFOS= doc/guile-netlink.texi

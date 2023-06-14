@@ -23,11 +23,13 @@
   #:use-module ((netlink route attrs) #:prefix route:)
   #:use-module ((netlink route link) #:prefix route:)
   #:use-module ((netlink route route) #:prefix route:)
+  #:use-module ((netlink nl80211 attrs) #:prefix nl80211:)
   #:use-module (netlink standard)
   #:use-module (netlink message)
   #:export (%default-message-decoder
             %default-route-decoder
-            %default-control-decoder))
+            %default-control-decoder
+            %default-nl80211-decoder))
 
 (define %default-message-decoder
   `((,NLMSG_NOOP . ,deserialize-no-data)
@@ -75,3 +77,27 @@
     (message-hdr ,deserialize-message-header '())
     (nlattr ,(route:deserialize-route-attr 'nlattr)
             ,@%default-control-attr-decoder)))
+
+(define %default-nl80211-decoder
+  `((message ,deserialize-message
+             ,@%default-message-decoder
+             ;; XXX where is nlmsg_type nl80211 == 32 defined?
+             ;;   genl_family nl80211_fam does not have a .id field.
+             ;; Need deserialize-generic-netlink-header?
+             (,32 . ,deserialize-generic-message)
+             (,NL80211_CMD_GET_STATION . ,deserialize-generic-message)
+             (,NL80211_CMD_NEW_SCAN_RESULTS . ,deserialize-generic-message)
+             (,NL80211_CMD_SCAN_ABORTED . ,deserialize-generic-message))
+    (message-hdr ,deserialize-message-header '())
+    (sta-info-attr ,(route:deserialize-route-attr 'sta-info-attr)
+                   ,@nl80211:%default-sta-info-attr-decoder)
+    (chain-signal-attr ,(route:deserialize-route-attr 'chain-signal-attr)
+                       ,@nl80211:%default-chain-signal-attr-decoder)
+    (rate-info-attr ,(route:deserialize-route-attr 'rate-info-attr)
+                    ,@nl80211:%default-rate-info-attr-decoder)
+    (sta-bss-param-attr ,(route:deserialize-route-attr 'sta-bss-param-attr)
+                        ,@nl80211:%default-sta-bss-param-attr-decoder)
+    (bss-attr ,(route:deserialize-route-attr 'bss-attr)
+              ,@nl80211:%default-bss-attr-decoder)
+    (nlattr ,(route:deserialize-route-attr 'nlattr)
+            ,@nl80211:%default-nl80211-attr-decoder)))
