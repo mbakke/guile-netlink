@@ -38,6 +38,7 @@
             link-set
             link-show
             link-name->index
+            link-index->name
             get-links
             wait-for-link
             print-link
@@ -165,6 +166,15 @@ criteria."
       ((link links ...)
        (if (equal? (link-name link) device)
            (link-id link)
+           (loop links))))))
+
+(define (link-index->name device)
+  (let loop ((links (get-links)))
+    (match links
+      (() (throw 'no-such-device device))
+      ((link links ...)
+       (if (equal? (link-id link) device)
+           (link-name link)
            (loop links))))))
 
 (define* (link-set device #:key (up #f) (down #f) (type #f)
