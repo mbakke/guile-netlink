@@ -44,6 +44,7 @@
            make-u64-route-attr
            make-s8-route-attr
            make-s32-route-attr
+           make-s64-route-attr
            make-nested-route-attr
            make-string-route-attr
            make-ethernet-route-attr
@@ -58,6 +59,7 @@
            deserialize-route-attr-data-u64
            deserialize-route-attr-data-s8
            deserialize-route-attr-data-s32
+           deserialize-route-attr-data-s64
            deserialize-route-attr-data-nested
            deserialize-route-attr-data-string
            deserialize-route-attr-data-ethernet
@@ -150,6 +152,13 @@
     (const 4)
     (lambda (data pos bv)
       (bytevector-s32-set! bv pos data (native-endianness)))))
+
+(define (make-s64-route-attr num)
+  (make-nl-data
+    num
+    (const 8)
+    (lambda (data pos bv)
+      (bytevector-s64-set! bv pos data (native-endianness)))))
 
 (define (make-nested-route-attr lst)
   (make-nl-data
@@ -245,6 +254,9 @@
 
 (define (deserialize-route-attr-data-s32 decoder bv pos)
   (make-s32-route-attr (bytevector-s32-ref bv pos (native-endianness))))
+
+(define (deserialize-route-attr-data-s64 decoder bv pos)
+  (make-s64-route-attr (bytevector-s64-ref bv pos (native-endianness))))
 
 (define (deserialize-route-attr-data-u16 decoder bv pos)
   (make-u32-route-attr (bytevector-u16-ref bv pos (native-endianness))))
