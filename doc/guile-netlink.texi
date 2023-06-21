@@ -34,6 +34,7 @@ implementation of the netlink protocol.
 * Introduction::           What is netlink?
 * API Reference::          Description of the library interface.
 * IP Library::             High-level functions for network devices.
+* NL80211 Library::        High-level functions for wireless network devices.
 
 * Concept Index::          Concepts.
 * Programming Index::      Data types, procedures, and variables.
@@ -54,6 +55,11 @@ IP Library
 * Link::                   Actions on network links.
 * Addr::                   Actions on network addresses.
 * Route::                  Actions on network routes.
+
+NL80211 library
+
+* Scan::                   Actions to work with wireless network scans.
+* Station::                Actions to work with wireless base stations.
 
 @end detailmenu
 @end menu
@@ -856,6 +862,49 @@ number of routes displayed, you can specify the family as in this example.
 @example
 (route-show #:family AF_INET6)
 @end example
+@end deffn
+
+@node NL80211 Library
+@chapter NL80211 Library
+
+This library comes with higher-level procedures that let you access and modify
+the state of wireless connection on your computer.
+
+@c (netlink nl80211 information-elements) is intentionally undocumented for now.
+
+@node NL80211 Attributes
+@section NL80211 Attributes
+
+The @code{(netlink nl80211 attrs)} module defines the following data types:
+
+@node Scan
+@section Scan
+
+The @code{(netlink nl80211 scan)} module contains procedures for requesting
+and printing wireless network scans.
+
+@deffn {Scheme Procedure} get-scan @var{interface}
+Request the latest scan results from the network driver for @code{interface}.
+@end deffn
+
+@deffn {Scheme Procedure} print-scan @var{scan}
+Print the results of @code{scan} to standard output, using a format similar
+to @command{iw <interface> scan dump} from @code{iw}.
+@end deffn
+
+@node Station
+@section Station
+
+The @code{(netlink nl80211 station)} module contains procedures for requesting
+and printing information about a wireless connection.
+
+@deffn {Scheme Procedure} get-station @var{interface} @var{bssid}
+Return information about the connected station on @code{interface} for @code{bssid}.
+@end deffn
+
+@deffn {Scheme Procedure} print-station @var{station}
+Print information about @code{station} to standard output, using a format
+similar to @command{iw <interface> station dump} from @code{iw}.
 @end deffn
 
 @c *********************************************************************
