@@ -4,9 +4,13 @@ Guile Netlink
 Guile Netlink is a [GNU Guile](https://gnu.org/software/guile) library
 providing an implementation of the netlink protocol.
 
-It currently provides a generic library for writing implementations of a
-netlink protocol, a low-level rtnetlink implementation that uses that
-library and a high-level API for network management that uses rtnetlink.
+It provides:
+
+* a generic library for writing implementations of a netlink protocol
+* a low-level rtnetlink implementation that uses that library
+* a high-level API for network management that uses rtnetlink
+* an implementation of the _generic_ netlink protocol (genetlink)
+* an interface for communicating with wireless devices (nl80211)
 
 Installation
 ------------
