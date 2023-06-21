@@ -420,13 +420,13 @@ A four-bytes signed integer
 A string
 @item @code{ethernet}
 An ethernet address.  Its value is a string that represents that address,
-for instnace @code{"01:23:45:67:89:ab"}
+for instance @code{"01:23:45:67:89:ab"}
 @item @code{ipv4}
 An IPv4 address.  Its value is a string that represents that address,
-for instnace @code{"192.0.2.152"}
+for instance @code{"192.0.2.152"}
 @item @code{ipv6}
 An IPv6 address.  Its value is a string that represents that address,
-for instnace @code{"2001:db8::0123:4567:89ab:cdef"}
+for instance @code{"2001:db8::0123:4567:89ab:cdef"}
 @item @code{bv}
 A bytevector.  This is used by default when the type is not supported.
 @end table
