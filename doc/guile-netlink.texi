@@ -7,6 +7,7 @@
 
 @copying
 Copyright @copyright{} 2020 Julien Lepiller
+Copyright @copyright{} 2023 Marius Bakke
 
 @quotation
 Permission is granted to copy, distribute and/or modify this document
@@ -46,6 +47,7 @@ API Reference
                            protocols.
 * Netlink API::            Common structures and data types for every protocols.
 * Rtnetlink API::          The ROUTE_NETLINK protocol.
+* Generic API::            The ``generic'' netlink protocol (genetlink).
 
 IP Library
 
@@ -264,6 +266,13 @@ optional @var{groups} keyword, you can select broadcast groups to subscribe to.
 
 @var{flags} is a set of additional flags to pass as the second argument
 to the @code{socket} system call---e.g., @code{SOCK_NONBLOCK}.
+@end deffn
+
+@deffn {Scheme Procedure} connect-generic [#:groups 0] [#:flags 0]
+This procedure is a wrapper for @code{connect} that creates a socket for the
+generic netlink protocol (@dfn{genetlink}), binds it to the kernel and returns
+it.  The @var{groups} and @var{flags} keywords work the same as for
+@code{connect-route}, described above.
 @end deffn
 
 @cindex subscribing, to an rtnetlink group
@@ -494,6 +503,49 @@ The index of the device this address is for.
 A list of attributes.  This field must contain a list of @code{nl-data}
 structures, not a structure by itself.
 @end table
+@end deffn
+
+@node Generic API
+@subsection Generic Netlink API
+@cindex genetlink
+
+The @code{(netlink generic)} module defines the following data types:
+
+@deffn {Datatype} generic-message
+This defines a header structure for the attribute, as well as its body.
+
+@table @asis
+@item @code{cmd}
+The netlink family command.  For instance, @code{NL80211_CMD_GET_SCAN}.
+
+@item @code{version}
+Request a specific version of the netlink subsystem.  As of 2023 this does not
+appear to be widely (or at all) used, setting it to @code{1} is a safe choice.
+
+@item @code{reserved}
+@c XXX perhaps this should not be exposed, or at least have a default value.
+This field should always be set to @code{0}.
+
+@item @code{attrs}
+Netlink attributes, as an @code{nl-data} structure.
+
+@end table
+@end deffn
+
+@node Netlink Controller
+@subsection Netlink Controller
+
+The @code{netlink generic controller} module contains procedures for interacting
+with the generic netlink API.
+
+@deffn {Scheme Procedure} family-id @var{name}
+Get the netlink family ID for @var{name}.  This is used for communicating with
+specific subsystems---e.g. when using @code{nl80211}, one must first resolve
+the ID using this procedure.
+@end deffn
+
+@deffn {Scheme Procedure} get-families
+Request all generic netlink families supported by the kernel.
 @end deffn
 
 @node IP Library
