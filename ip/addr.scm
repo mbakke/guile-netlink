@@ -28,7 +28,11 @@
   #:use-module (netlink standard)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-9)
-  #:export (addr-add
+  #:export (<addr> make-addr addr?
+            addr-family addr-prefix addr-flags addr-scope
+            addr-link addr-addr addr-brd addr-cacheinfo
+            get-addrs
+            addr-add
             addr-del
             addr-show))
 
