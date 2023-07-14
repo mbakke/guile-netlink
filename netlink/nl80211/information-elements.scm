@@ -77,9 +77,9 @@ containing the '(magic-byte . bv) pairs."
   (let ((data (bytevector-u8-ref bv 0)))
     (cond
      ((= 0 data) "<no flags>")
-     ((not (zero? (logand data #x01))) "NonERP_Present")
-     ((not (zero? (logand data #x02))) "Use_Protection")
-     ((not (zero? (logand data #x04))) "Barker_Preamble_Mode")
+     ((logtest data #x01) "NonERP_Present")
+     ((logtest data #x02) "Use_Protection")
+     ((logtest data #x04) "Barker_Preamble_Mode")
      (else "<Failed to decode ERP>"))))
 
 (define (ds-parameter-set->string bv)
@@ -97,15 +97,15 @@ containing the '(magic-byte . bv) pairs."
             (loop (+ count 1)
                   (cons (format #f "~a~a"
                                 (cond ((and (= r BSS_MEMBERSHIP_SELECTOR_VHT_PHY)
-                                            (not (zero? (logand byte #x80))))
+                                            (logtest byte #x80))
                                        "VHT")
                                       ((and (= r BSS_MEMBERSHIP_SELECTOR_HT_PHY)
-                                            (not (zero? (logand byte #x80))))
+                                            (logtest byte #x80))
                                        "HT")
                                       (else (format #f "~d.~d"
                                                     (floor (/ r 2))
                                                     (* 5 (logand r 1)))))
-                                (if (zero? (logand byte #x80)) "" "*"))
+                                (if (logtest byte #x80) "*" ""))
                         output)))))))
 
 (define (bss-load->string bv)

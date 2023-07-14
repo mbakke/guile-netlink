@@ -122,14 +122,13 @@
                          (if ifindex
                              (format #f "~@[(on ~a)~]" (link-index->name ifindex))
                              "")
-                         (case status
-                           ;; FIXME: Why does NL80211_BSS_STATUS_ASSOCIATED and
-                           ;; friends not work here?
-                           ((0) "authenticated")
-                           ((1) "associated")
-                           ((2) "joined")
-                           (else (format #f "unknown status: ~a"
-                                         (if status status "?")))))
+                         (cond
+                          ((= status NL80211_BSS_STATUS_AUTHENTICATED)
+                           "authenticated")
+                          ((= status NL80211_BSS_STATUS_ASSOCIATED) "associated")
+                          ((= status NL80211_BSS_STATUS_IBSS_JOINED) "joined")
+                          (else (format #f "unknown status: ~a"
+                                        (if status status "?")))))
                  (print-bss bss)))
              (format (current-error-port) "bss info missing!~%"))))
       ((memv (message-kind message) (list NL80211_CMD_SCAN_ABORTED))
