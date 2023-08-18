@@ -255,7 +255,7 @@
 ;; The output format is identical with "iw INTERFACE station dump".
 (define (print-station station)
   (for-each (lambda (message)
-              (when (memv (message-kind message) (list NL80211_CMD_GET_SCAN))
+              (when (memv (message-kind message) (list NL80211_CMD_NEW_SCAN_RESULTS))
                 (let* ((data (message-data message))
                        (attrs (generic-message-attrs data))
                        (sta-info (get-attr attrs NL80211_ATTR_STA_INFO)))

@@ -108,7 +108,7 @@
   (for-each
    (lambda (message)
      (cond
-      ((memv (message-kind message) (list NL80211_CMD_GET_SCAN))
+      ((memv (message-kind message) (list NL80211_CMD_NEW_SCAN_RESULTS))
        (let* ((data (message-data message))
               (attrs (generic-message-attrs data))
               (ifindex (get-attr attrs NL80211_ATTR_IFINDEX))
