@@ -53,25 +53,38 @@ containing the '(magic-byte . bv) pairs."
                        ((#\O) "Outdoor only")
                        ((#\ ) "Indoor/Outdoor")
                        (else "bogus")))
-        (triplets (cond
-                   ((< (bytevector-length bv) 3)
-                    "\t\tNo country IE triplets present")
-                   ((= (bytevector-length bv) 6)
-                    (let ((first-channel (bytevector-u8-ref bv 3))
-                          (num-channels (bytevector-u8-ref bv 4))
-                          (max-power (bytevector-s8-ref bv 5)))
-                      ;; 2GHz.
-                      (format #f "\t\tChannels [~d - ~d] @ ~d dBm"
-                              first-channel
-                              (if (<= first-channel 14)
-                                  (+ first-channel (- num-channels 1))
-                                  (+ first-channel (* 4 (- num-channels 1))))
-                              max-power)))
-                   ;; TODO: 5GHz!  See ieee80211_country_ie_triplet and scan.c.
-                   (else
-                    "\t\tFailed to decode country IE triplets"))))
-        (format #f "~a\tEnvironment: ~a\n~a"
-                country environment triplets)))
+        (triplets
+         (cond
+          ((< (bytevector-length bv) 3)
+           "\t\tNo country IE triplets present")
+          ((>= (bytevector-length bv) 6)
+           (let loop ((pos 3)
+                      (result '()))
+             (if (>= pos (bytevector-length bv))
+                 (string-join (reverse result) "\n")
+                 (let ((first (bytevector-u8-ref bv pos)))
+                   (if (> first IEEE80211_COUNTRY_EXTENSION_ID)
+                       (let ((class (bytevector-u8-ref bv (+ pos 1)))
+                             (coverage (bytevector-u8-ref bv (+ pos 2))))
+                         (loop (+ pos 3)
+                               (cons (string-append "\t\t\
+Extension ID: ~d Regulatory Class: ~d Coverage class: ~d"
+                                             first class coverage)
+                                     result)))
+                       (let ((num-channels (bytevector-u8-ref bv (+ pos 1)))
+                             (max-power (bytevector-s8-ref bv (+ pos 2))))
+                         (loop (+ pos 3)
+                               (cons (format #f "\t\tChannels [~d - ~d] @ ~d dBm"
+                                             first
+                                             (if (<= first 14)
+                                                 (+ first (- num-channels 1)) ;2GHz
+                                                 (+ first (* 4 (- num-channels 1))))
+                                             max-power)
+                                     result))))))))
+          (else
+           "\t\tFailed to decode country IE triplets"))))
+    (format #f "~a\tEnvironment: ~a\n~a"
+            country environment triplets)))
 
 (define (erp->string bv)
   (let ((data (bytevector-u8-ref bv 0)))
