@@ -34,11 +34,14 @@ containing the '(magic-byte . bv) pairs."
   (let ((len (bytevector-length bv)))
     (let loop ((pos 0)
                (result '()))
-      (if (>= pos len)
+      ;; Use (+ pos 2) in case BV is incomplete.
+      (if (>= (+ pos 2) len)
           (reverse result)
           (let* ((byte (bytevector-u8-ref bv pos))
                  (size (bytevector-u8-ref bv (+ pos 1)))
                  (data (make-bytevector size)))
+            ;; TODO: What if SIZE is longer than the actual data and we're
+            ;; at the end of BV?
             (bytevector-copy! bv (+ pos 2) data 0 size)
             (loop (+ pos size 2)
                   (alist-cons byte data result)))))))
@@ -60,7 +63,7 @@ containing the '(magic-byte . bv) pairs."
           ((>= (bytevector-length bv) 6)
            (let loop ((pos 3)
                       (result '()))
-             (if (>= pos (bytevector-length bv))
+             (if (>= (+ pos 2) (bytevector-length bv))
                  (string-join (reverse result) "\n")
                  (let ((first (bytevector-u8-ref bv pos)))
                    (if (> first IEEE80211_COUNTRY_EXTENSION_ID)
